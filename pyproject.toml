@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=61.0", "versioningit~=2.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skewencoder"
+description = "skewencoder setting up"
+readme = "README.md"
+version = "0.1"
+authors = [
+    { name = "Zhikun Zhang" , email = "zhikun.zhang@ltt.rwth-aachen.de"},
+    { name = "GiovanniMaria Piccini" }
+]
+license = { text = "MIT" }
+
+dependencies = [
+    "lightning",
+    "torch",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "scipy",
+    "KDEpy",
+    "mlcolvar @ git+https://github.com/zzkmirok/mlcolvar.git@zhikun-mlskew" 
+]
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Development Status :: 3 - Alpha",
+    "Natural Language :: English"
+]
+
+
+[project.urls]
+
+
+[project.optional-dependencies]
+test = [
+  "pytest>=6.1.2",
+  "pytest-runner",
+  "pytest-cov", 
+  "codecov",
+  "nbmake",
+]
+doc = [
+  "sphinx",
+  "nbsphinx",
+  "furo",
+  "sphinx-copybutton", 
+]
