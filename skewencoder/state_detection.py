@@ -28,6 +28,7 @@ class Bond_type_lib:
     def _update_m_n(self):
         self.bond_type_dict["c-c"] = {"m,n" : (12, 6)}
         self.bond_type_dict["c-o"] = {"m,n" : (12, 6)}
+        self.bond_type_dict["o-h"] = {"m,n" : (12, 6)} # including OH bond
     
     def __call__(self, bond_type_dict):
         self._update_m_n()
@@ -173,7 +174,7 @@ class State_detection:
 
     @property
     def n_states(self):
-        return len(self.states)
+        return len(self.states)-1
     
 
 def test_State_detection():
