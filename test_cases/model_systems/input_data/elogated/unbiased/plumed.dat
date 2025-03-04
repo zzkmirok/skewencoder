@@ -1,0 +1,6 @@
+p: DISTANCE ATOMS=1,2 COMPONENTS
+# Energy
+ene: CUSTOM PERIODIC=NO ARG=p.x,p.y FUNC=1/(1+exp(-(y-x)/4))*(2.0*(x-0.0)^2+0.25*(y-20.0)^2)+(1-1/(1+exp(-(y-x)/4)))*(0.25*(x-20.0)^2+2.5*(y-0.0)^2)
+potential: BIASVALUE ARG=ene
+
+PRINT ARG=p.x,p.y FILE=./COLVAR STRIDE=10
