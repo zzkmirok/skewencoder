@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-__pycache__/*
-=======
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -115,4 +112,3 @@ old_code/
 .vscode/
 test_notebooks/
 lightning_logs/
->>>>>>> 109df68 (first commit)

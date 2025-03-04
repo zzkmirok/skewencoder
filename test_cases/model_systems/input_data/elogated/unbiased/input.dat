@@ -1,0 +1,8 @@
+nstep         20000
+tstep         0.05
+temperature   1.0
+friction      10.0
+periodic      false
+dimension     2
+ipos          0.0,20.0
+plumed        ./plumed.dat
