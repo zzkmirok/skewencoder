@@ -36,6 +36,7 @@ RESULTS_FOLDER = f"./results"
 UNBIASED_FOLDER = f"./unbiased"
 LIGHTNING_LOGS = f"./lightning_logs"
 
+# TODO: may be later move to the skewencoder module
 def chaba_training(state_detection: STADECT.State_detection, iter: int, encoder_layers : Sequence[int], loss_coeff: float, batch_size: int):
     ITER_FOLDER = RESULTS_FOLDER + f"/iter_{iter}"
     subprocess.run([*bash_prefix,f"mkdir {ITER_FOLDER}"], cwd=SCRIPT_DIR)
