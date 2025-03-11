@@ -50,3 +50,6 @@ doc = [
   "furo",
   "sphinx-copybutton", 
 ]
+
+[tool.setuptools]
+packages = ["skewencoder"]
