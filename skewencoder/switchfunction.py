@@ -20,6 +20,12 @@ class SwitchFun:
         else:
             raise ValueError()
     
+    def set_r0(self, r0: float):
+        self.r0 = r0
+    
+    def get_r0(self):
+        return self.r0
+
     def __str__(self):
         print_str = "Switch function:\n"
         print_str += f"r0 = {self.r0}, m,n = {(self.m, self.n)}\n"
