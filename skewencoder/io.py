@@ -5,16 +5,22 @@ except ImportError as e:
     raise ImportError(
         "pandas is required to use the i/o utils (mlcolvar.utils.io)\n", e
     )
+import logging
 
 import numpy as np
 import torch
+import pathlib
 import os
 import urllib.request
 from typing import Union
 
+from collections.abc import Sequence, Mapping, Set
+
 from mlcolvar.data import DictDataset, DictModule, DictLoader
 
-__all__ = ["load_dataframe", "plumed_to_pandas", "create_dataset_from_files", "load_data"]
+from .switchfunction import SwitchFun
+
+__all__ = ["GeometryParser","load_dataframe", "plumed_to_pandas", "create_dataset_from_files", "load_data"]
 
 
 def is_plumed_file(filename):
@@ -332,6 +338,60 @@ def test_datasetFromFile():
         stride=1,
     )
 '''
+class GeometryParser:
+    def __init__(self, coord_file : str | pathlib.Path = None):
+        if coord_file is None:
+            raise ValueError("empty coord file")
+        
+        if isinstance(coord_file, str):
+            coord_file = pathlib.Path(coord_file)
+        self.coord_file = coord_file
+        self.atom_list : Mapping[str, list[int]] = {}
+        self.adjacent_list: Mapping[int, list[int]] = {}
+        coordinates_list = []
+
+        with open(self.coord_file, 'r') as f:
+            for index, line in enumerate(f):
+                parts = line.split()
+                atom_type = parts[0]
+                x, y, z = map(float, parts[1:])
+
+            # Update mapping dictionary
+                if atom_type not in self.atom_list:
+                    self.atom_list[atom_type] = []
+                self.atom_list[atom_type].append(index)
+
+            # Append coordinates to list
+                coordinates_list.append([x, y, z])
+        
+        self.coordinates_list = np.array(coordinates_list)
+        self.adjacent_list : Mapping[int, list[int]] = self.parse_adj_list()
+
+    
+    def parse_adj_list(self, r_heavy_atoms: float = 1.7, r_H : float = 1.2):
+        adj_list: Mapping[int, list[int]] = {}
+        sw = SwitchFun(r0=r_heavy_atoms)
+        for i in range(self.coordinates_list.shape[0] - 1):
+            for j in range(i+1, self.coordinates_list.shape[0]):
+                for key in self.atom_list.keys():
+                    if (i in self.atom_list[key]) or (j in self.atom_list[key]):
+                        if key == "H":
+                            sw.set_r0(r_H)
+                        break
+                distance = np.linalg.norm(self.coordinates_list[i,:] - self.coordinates_list[j,:])
+                if sw(distance) > 0.5:
+                    if i not in adj_list:
+                        adj_list[i] = []
+                    adj_list[i].append(j)
+
+                    if j not in adj_list:
+                        adj_list[j] = []
+                    adj_list[j].append(i)
+                sw.set_r0(r_heavy_atoms)
+        return adj_list
+    
+
+
 
 if __name__ == "__main__":
     # test_datasetFromFile()
