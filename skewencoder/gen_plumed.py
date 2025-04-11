@@ -269,4 +269,4 @@ class PlumedInput:
                     if isinstance(obj, PYTORCH_MODEL):
                         print_args.append(obj.label+".*")
         
-        return f"PRINT FMT=%g STRIDE={self.print_stride} FILE={self.simulation_folder}/COLVAR ARG={",".join(print_args)}"
+        return f"PRINT FMT=%g STRIDE={self.print_stride} FILE={self.simulation_folder}/COLVAR ARG={','.join(print_args)}"

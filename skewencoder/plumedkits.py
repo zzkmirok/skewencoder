@@ -44,7 +44,7 @@ class DISTANCE(PLUMED_OBJ):
         self.atoms = atoms
 
     def build(self):
-        atoms_str = f"ATOMS={",".join(map(str, self.atoms))}"
+        atoms_str = f"ATOMS={','.join(map(str, self.atoms))}"
         label_prefix = f"{self.label}:"
         return " ".join([label_prefix, self.__class__.__name__, atoms_str, self.Options_str]).rstrip()
     
@@ -116,12 +116,12 @@ class WALL(PLUMED_OBJ):
         wall_type = "LOWER_WALL"
         if not self.is_lower_wall:
             wall_type = "UPPER_WALL"
-        arg_str = f"ARG={",".join(self.arg)}"
-        at_str = f"AT={",".join(map(str, self.at))}"
-        kappa_str = f"KAPPA={",".join(map(str, self.kappa))}"
-        exp_str = f"EXP={",".join(map(str, self.exp))}"
-        eps_str = f"EPS={",".join(map(str, self.eps))}"
-        offset_str = f"OFFSET={",".join(map(str, self.offset))}"
+        arg_str = f"ARG={','.join(self.arg)}"
+        at_str = f"AT={','.join(map(str, self.at))}"
+        kappa_str = f"KAPPA={','.join(map(str, self.kappa))}"
+        exp_str = f"EXP={','.join(map(str, self.exp))}"
+        eps_str = f"EPS={','.join(map(str, self.eps))}"
+        offset_str = f"OFFSET={','.join(map(str, self.offset))}"
         return " ".join([label_prefix, wall_type, arg_str, at_str, kappa_str, exp_str, eps_str, offset_str, self.Options_str]).rstrip()
     
 
@@ -142,6 +142,6 @@ class PYTORCH_MODEL(PLUMED_OBJ):
 
     def build(self):
         label_prefix = f"{self.label}:"
-        arg_str = f"ARG={",".join(self.arg)}"
+        arg_str = f"ARG={','.join(self.arg)}"
         file_str = f"FILE={self.file}"
         return " ".join([label_prefix, self.__class__.__name__, file_str, arg_str]).rstrip()
