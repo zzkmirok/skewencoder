@@ -15,6 +15,10 @@ from collections.abc import Sequence, Mapping, Set
 from typing import Tuple, Union
 from skewencoder.io import load_dataframe
 
+from typing import Callable
+
+from functools import partial
+
 import re
 
 # TODO: should be static
@@ -54,7 +58,7 @@ def transform_colvar_key(colvar_key: str, pattern: str = r"^([A-Za-z]+)\d+([A-Za
 
 
 
-def parse_unbiased_colvar(colvar_file: str = f"{SCRIPT_DIR}/COLVAR", std_tol: float = 0.05, r0_tol: float = 1.7):
+def parse_unbiased_colvar(colvar_file: str = f"{SCRIPT_DIR}/COLVAR", std_tol: float = 0.05, r0_tol: float = 1.7, transform_colvar_key : Callable[[str],str] = partial(transform_colvar_key, pattern = r"^([A-Za-z]+)\d+([A-Za-z]+)\d+$")):
     colvar_df = load_dataframe(colvar_file)
     last_rows = colvar_df["time"].values.shape[0]
     bond_type_dict : Mapping[str, Mapping[str, Union[float, Tuple[int, int]]]] = {} #TODO: should be bond type dict?
