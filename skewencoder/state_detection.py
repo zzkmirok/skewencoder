@@ -29,10 +29,20 @@ class Bond_type_lib:
 
     # TODO: first just for KHP, also could be static?
     # TODO: Not only update m, n, but also possible bonds (heavy atom pairs) that was not read from unbiased colvar
+    def build_default(self):
+        self.bond_type_dict["C-C"] = {"m,n" : (12, 6), "bond length": 1.5}
+        self.bond_type_dict["C-O"] = {"m,n" : (12, 6), "bond length": 1.5}
+        self.bond_type_dict["O-O"] = {"m,n" : (12, 6), "bond length": 1.5}
+        self.bond_type_dict["C-N"] = {"m,n" : (12, 6), "bond length": 1.5}
+        self.bond_type_dict["N-O"] = {"m,n" : (12, 6), "bond length": 1.5}
+        self.bond_type_dict["O-H"] = {"m,n" : (12, 6), "bond length": 1.1} # including OH bond
+        self.bond_type_dict["H-C"] = {"m,n" : (12, 6), "bond length": 1.1} # including CH bond
+    
     def _update_m_n(self):
         self.bond_type_dict["c-c"] = {"m,n" : (12, 6)}
         self.bond_type_dict["c-o"] = {"m,n" : (12, 6)}
         self.bond_type_dict["o-h"] = {"m,n" : (12, 6)} # including OH bond
+        self.bond_type_dict["c-h"] = {"m,n" : (12, 6)} # including CH bond
     
     def __call__(self, bond_type_dict):
         self._update_m_n()
@@ -58,7 +68,7 @@ def transform_colvar_key(colvar_key: str, pattern: str = r"^([A-Za-z]+)\d+([A-Za
 
 
 
-def parse_unbiased_colvar(colvar_file: str = f"{SCRIPT_DIR}/COLVAR", std_tol: float = 0.05, r0_tol: float = 1.7, transform_colvar_key : Callable[[str],str] = partial(transform_colvar_key, pattern = r"^([A-Za-z]+)\d+([A-Za-z]+)\d+$")):
+def parse_unbiased_colvar(colvar_file: str = f"{SCRIPT_DIR}/COLVAR", std_tol: float = 0.05, r0_tol: float = 1.6, transform_colvar_key : Callable[[str],str] = partial(transform_colvar_key, pattern = r"^([A-Za-z]+)\d+([A-Za-z]+)\d+$")):
     colvar_df = load_dataframe(colvar_file)
     last_rows = colvar_df["time"].values.shape[0]
     bond_type_dict : Mapping[str, Mapping[str, Union[float, Tuple[int, int]]]] = {} #TODO: should be bond type dict?
@@ -93,7 +103,7 @@ def parse_unbiased_colvar(colvar_file: str = f"{SCRIPT_DIR}/COLVAR", std_tol: fl
 # TODO: at @properties functions
 class State_detection:
     def __init__(self, interval: Tuple[float, float], bond_type_dict: 
-                 Mapping[str, Mapping[str, Union[float, Tuple[int, int]]]], n_heavy_atom_pairs: int):
+                 Mapping[str, Mapping[str, Union[float, Tuple[int, int]]]], n_heavy_atom_pairs: int, pattern : str = r"^([A-Za-z]+)\d+([A-Za-z]+)\d+$"):
         self.interval = interval
         self.bond_type_dict = bond_type_dict
         self.sw_dict: Mapping[str, SwitchFun] = {}
@@ -102,6 +112,8 @@ class State_detection:
         self.states_connectivity: Sequence[np.ndarray] = [] # TODO: Also sparse? So far 1-D array only heavy atoms
         self.n_heay_atom_pairs = n_heavy_atom_pairs
         self.current_state = 0
+        self.pattern = pattern
+        self._transform_colvar_key = partial(transform_colvar_key, pattern = self.pattern)
         for bond_name, options in self.bond_type_dict.items():
             m = 12
             n = 6
@@ -137,7 +149,8 @@ class State_detection:
         # TODO: discover if I update the values via colvar_df.update({key: self.sw_dict[current_bond_type](value)}), my value will then be updated?
         iter_key = 0
         for key in colvar_df.keys():
-            current_bond_type = transform_colvar_key(colvar_key=key)
+            print(f"current key is {key}")
+            current_bond_type = self._transform_colvar_key(colvar_key=key)
             if current_bond_type is not None:
                 last_rows_mean = np.mean(colvar_df[key].iloc[-last_rows:].values)
                 print(f"current bond type: {current_bond_type}")

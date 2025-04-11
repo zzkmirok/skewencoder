@@ -153,23 +153,20 @@ def main(kappa):
 
     subprocess.run([*bash_prefix, "mv Passerini-1.restart newiter.restart"], cwd = SCRIPT_DIR)
     subprocess.run([*bash_prefix, "rm -f Passerini*.restart"], cwd=SCRIPT_DIR)
-    subprocess.run([*bash_prefix, f"mv Passerini-pos-1.xyz {kappa[0]}_iteration_Chaba_unbiased-pos.xyz"], cwd = SCRIPT_DIR)
+    subprocess.run([*bash_prefix, f"mv Passerini-pos-1.xyz {kappa[0]}_iteration_Passerini_unbiased-pos.xyz"], cwd = SCRIPT_DIR)
     subprocess.run([*bash_prefix, f"cat {kappa[0]}_iteration_Passerini_unbiased-pos.xyz > all_{kappa[0]}.xyz"], cwd=SCRIPT_DIR)
     subprocess.run([*bash_prefix,"rm -f PLUMED.OUT Passerini*"], cwd=SCRIPT_DIR)
 
-    heavy_bond_type_dict, n_descriptors_heavy_from_colvar,heavy_atom_pairs_list = STADECT.parse_unbiased_colvar(colvar_file = f"{UNBIASED_FOLDER}/COLVAR", transform_colvar_key=partial(STADECT.transform_colvar_key, pattern = pattern_heavy))
-    assert n_descriptors_heavy == n_descriptors_heavy_from_colvar
-
-    if not only_heavy:
-        h_adj_bond_type_dict, n_descriptors_h_adj_from_colvar,h_adj_atom_pairs_list = STADECT.parse_unbiased_colvar(colvar_file = f"{UNBIASED_FOLDER}/COLVAR", transform_colvar_key=partial(STADECT.transform_colvar_key, pattern = pattern_h_adj))
-        assert n_descriptors_h_adj == n_descriptors_h_adj_from_colvar
+    bond_type_lib = STADECT.Bond_type_lib()
+    bond_type_lib.build_default()
+    bond_type_dict = bond_type_lib.bond_type_dict
 
     encoder_layer_heavy = [n_descriptors_heavy, int(n_layer_factor*n_descriptors_heavy), int(n_layer_factor/2*n_descriptors_heavy), int(n_layer_factor/4*n_descriptors_heavy), int(np.sqrt(n_layer_factor/4*n_descriptors_heavy)), 1]
     if not only_heavy:    
         encoder_layer_h_adj = [n_descriptors_h_adj, int(n_layer_factor*n_descriptors_h_adj), int(n_layer_factor/2*n_descriptors_h_adj), int(n_layer_factor/4*n_descriptors_heavy), int(np.sqrt(n_layer_factor/4*n_descriptors_h_adj)), 1]
-    state_detection_heavy = STADECT.State_detection((0.3, 0.7), bond_type_dict=heavy_bond_type_dict, n_heavy_atom_pairs=n_descriptors_heavy_from_colvar)
+    state_detection_heavy = STADECT.State_detection((0.3, 0.7), bond_type_dict=bond_type_dict, n_heavy_atom_pairs=n_descriptors_heavy, pattern=pattern_heavy)
     if not only_heavy:
-        state_detection_h_adj = STADECT.State_detection((0.3, 0.7), bond_type_dict=h_adj_bond_type_dict, n_heavy_atom_pairs=n_descriptors_h_adj_from_colvar)
+        state_detection_h_adj = STADECT.State_detection((0.3, 0.7), bond_type_dict=bond_type_dict, n_heavy_atom_pairs=n_descriptors_h_adj, pattern=pattern_h_adj)
 
     subprocess.run([*bash_prefix, f"mkdir -p {RESULTS_FOLDER}"])
 
