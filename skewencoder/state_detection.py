@@ -23,6 +23,24 @@ import re
 
 # TODO: should be static
 
+
+atomic_numbers = {
+    "H": 1,    # Hydrogen
+    "He": 2,   # Helium
+    "Li": 3,   # Lithium
+    "Be": 4,   # Beryllium
+    "B": 5,    # Boron
+    "C": 6,    # Carbon
+    "N": 7,    # Nitrogen
+    "O": 8,    # Oxygen
+    "F": 9,    # Fluorine
+    "Ne": 10   # Neon
+    # Add more elements as needed...
+}
+
+def get_atomic_number(symbol):
+    return atomic_numbers[symbol]
+
 class Bond_type_lib:
     def __init__(self):
         self.bond_type_dict : Mapping[str, Mapping[str, Union[float, Tuple[int, int]]]] = {}
@@ -35,7 +53,7 @@ class Bond_type_lib:
         self.bond_type_dict["O-O"] = {"m,n" : (12, 6), "bond length": 1.5}
         self.bond_type_dict["C-N"] = {"m,n" : (12, 6), "bond length": 1.5}
         self.bond_type_dict["N-O"] = {"m,n" : (12, 6), "bond length": 1.5}
-        self.bond_type_dict["O-H"] = {"m,n" : (12, 6), "bond length": 1.1} # including OH bond
+        self.bond_type_dict["H-O"] = {"m,n" : (12, 6), "bond length": 1.1} # including OH bond
         self.bond_type_dict["H-C"] = {"m,n" : (12, 6), "bond length": 1.1} # including CH bond
     
     def _update_m_n(self):
@@ -61,7 +79,8 @@ def transform_colvar_key(colvar_key: str, pattern: str = r"^([A-Za-z]+)\d+([A-Za
         if len(atom_pair) == 1:
             bond_type = f"{list(atom_pair)[0]}-{list(atom_pair)[0]}"
         else:
-            bond_type = f"{sorted(list(atom_pair))[0]}-{sorted(list(atom_pair))[1]}"
+            sorted_atom_pair = sorted(list(atom_pair), key=get_atomic_number)
+            bond_type = f"{sorted_atom_pair[0]}-{sorted_atom_pair[1]}"
         return bond_type
     else:
         return None
