@@ -1,0 +1,98 @@
+&EXT_RESTART
+  RESTART_FILE_NAME newiter.restart
+  RESTART_COUNTERS .TRUE.
+&END EXT_RESTART
+
+&GLOBAL
+  PROJECT Passerini
+  RUN_TYPE MD
+  SEED 300
+  PRINT_LEVEL MEDIUM
+&END GLOBAL
+
+&FORCE_EVAL
+  METHOD QS
+  &DFT
+    &QS
+      METHOD xTB
+      &xTB
+        DO_EWALD FALSE
+      &END xTB
+      EPS_DEFAULT 1.0E-5
+    &END QS
+    &SCF
+      EPS_SCF 1.0E-5
+      SCF_GUESS ATOMIC
+      MAX_SCF 1000
+      &OT
+        PRECONDITIONER FULL_SINGLE_INVERSE
+        MINIMIZER DIIS
+      &END OT
+    &END SCF
+  &END DFT
+
+  &SUBSYS
+    &CELL
+      ABC 10 10 10
+    &END CELL
+    &COORD
+      @include 'coord.dat'
+    &END COORD
+  &END SUBSYS
+&END FORCE_EVAL
+
+&MOTION
+  &PRINT
+    &RESTART
+      &EACH
+        MD 10
+      &END EACH
+    &END RESTART
+    &RESTART_HISTORY
+      &EACH
+        MD 2500
+      &END EACH
+    &END RESTART_HISTORY
+    &TRAJECTORY
+      FORMAT XYZ 
+      &EACH
+        MD 1
+      &END EACH
+    &END TRAJECTORY
+  &END PRINT
+
+  &MD
+    ENSEMBLE NVT
+    TIMESTEP [fs] 0.5
+    STEPS 5000
+    TEMPERATURE 300
+    &THERMOSTAT
+      REGION GLOBAL
+      TYPE CSVR
+      &CSVR
+        TIMECON [fs] 10
+      &END CSVR
+      &PRINT
+        &TEMPERATURE
+          &EACH
+            MD 1
+          &END EACH
+        &END TEMPERATURE
+      &END PRINT
+    &END THERMOSTAT
+  &END MD
+
+  &FREE_ENERGY
+    &METADYN
+      USE_PLUMED .TRUE.
+      PLUMED_INPUT_FILE ./plumed.dat
+    &END METADYN
+  &END FREE_ENERGY
+&END MOTION
+
+! Don't forget to adjust the name of the "<your project>.restart" file
+!&EXT_RESTART
+!  RESTART_FILE_NAME MD-1.restart
+!  RESTART_COUNTERS .TRUE.
+!&END EXT_RESTART
+

@@ -113,9 +113,9 @@ class WALL(PLUMED_OBJ):
 
     def build(self):
         label_prefix = f"{self.label}:"
-        wall_type = "LOWER_WALL"
+        wall_type = "LOWER_WALLS"
         if not self.is_lower_wall:
-            wall_type = "UPPER_WALL"
+            wall_type = "UPPER_WALLS"
         arg_str = f"ARG={','.join(self.arg)}"
         at_str = f"AT={','.join(map(str, self.at))}"
         kappa_str = f"KAPPA={','.join(map(str, self.kappa))}"

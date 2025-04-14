@@ -55,7 +55,7 @@ class Bond_type_lib:
         self.bond_type_dict["N-O"] = {"m,n" : (12, 6), "bond length": 1.5}
         self.bond_type_dict["H-O"] = {"m,n" : (12, 6), "bond length": 1.1} # including OH bond
         self.bond_type_dict["H-C"] = {"m,n" : (12, 6), "bond length": 1.1} # including CH bond
-    
+    # TODO: convert to capital letters and change labels in BAS
     def _update_m_n(self):
         self.bond_type_dict["c-c"] = {"m,n" : (12, 6)}
         self.bond_type_dict["c-o"] = {"m,n" : (12, 6)}
@@ -79,7 +79,10 @@ def transform_colvar_key(colvar_key: str, pattern: str = r"^([A-Za-z]+)\d+([A-Za
         if len(atom_pair) == 1:
             bond_type = f"{list(atom_pair)[0]}-{list(atom_pair)[0]}"
         else:
-            sorted_atom_pair = sorted(list(atom_pair), key=get_atomic_number)
+            if all(atom in atomic_numbers.keys() for atom in atom_pair):
+                sorted_atom_pair = sorted(list(atom_pair), key=get_atomic_number)
+            else: # Temporal solution for compatibility
+                sorted_atom_pair = sorted(list(atom_pair))
             bond_type = f"{sorted_atom_pair[0]}-{sorted_atom_pair[1]}"
         return bond_type
     else:

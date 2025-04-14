@@ -233,7 +233,7 @@ class PlumedInput:
         temp_AT = self.skew_wall_heavy["pos"] + (self.skew_wall_heavy["offset"] if self.skew_wall_heavy["is_lower_wall"] else (-self.skew_wall_heavy["offset"]))
         WALL_snippet.append(WALL(label="cv_wall_heavy", 
                                  is_lower_wall=self.skew_wall_heavy["is_lower_wall"],
-                                 ARG=self.default_PYTORCH_MODEL_labels[0],
+                                 ARG=self.default_PYTORCH_MODEL_labels[0]+".node-0",
                                  AT=temp_AT,
                                  KAPPA=self.skew_wall_heavy["kappa"]).build()) #cv_heavy 
         self.default_NN_CV_WALL_labels.append("cv_wall_heavy")
@@ -242,7 +242,7 @@ class PlumedInput:
             temp_AT = self.skew_wall_h_adj["pos"] + (self.skew_wall_h_adj["offset"] if self.skew_wall_h_adj["is_lower_wall"] else (-self.skew_wall_h_adj["offset"]))
             WALL_snippet.append(WALL(label="cv_wall_h_adj", 
                                     is_lower_wall=self.skew_wall_h_adj["is_lower_wall"],
-                                    ARG=self.default_PYTORCH_MODEL_labels[1],
+                                    ARG=self.default_PYTORCH_MODEL_labels[1]+".node-0",
                                     AT=temp_AT,
                                     KAPPA=self.skew_wall_h_adj["kappa"]).build()) #cv_heavy 
             self.default_NN_CV_WALL_labels.append("cv_wall_h_adj")

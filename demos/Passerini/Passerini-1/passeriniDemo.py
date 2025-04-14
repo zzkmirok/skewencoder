@@ -106,7 +106,7 @@ def passerini_simulation(model, dataset, kappa, offset):
     if skew_sknn < 0:
         is_lower_wall = False
 
-    return {"is_lower_wall": is_lower_wall, "kappa": kappa, "pos": mu_sknn, "offset": offset}
+    return {"is_lower_wall": is_lower_wall, "kappa": float(kappa), "pos": float(mu_sknn), "offset": float(offset)}
 
 
 def gen_plumed_passerini(plumed_input : PlumedInput = None, file_path = SCRIPT_DIR):
@@ -118,7 +118,7 @@ def gen_plumed_passerini(plumed_input : PlumedInput = None, file_path = SCRIPT_D
 
 
 def main(kappa):
-    n_max_iter = 40
+    n_max_iter = 1
     loss_coeff = 0.1
     torch.manual_seed(22)
     batch_size = 100
@@ -146,10 +146,10 @@ def main(kappa):
     if not only_heavy:
         n_descriptors_h_adj = len(plumed_input_unbiased.h_heavy_pairs)
     
-    subprocess.run([*bash_prefix,"srun -n 12 cp2k.popt job.inp > output.log"], cwd=SCRIPT_DIR)
+    # subprocess.run([*bash_prefix,"srun -n 12 cp2k.popt job.inp > output.log"], cwd=SCRIPT_DIR)
 
     # For command line interface testing
-    # subprocess.run([*bash_prefix,"cp2k.popt job.inp > output.log"], cwd=SCRIPT_DIR)
+    subprocess.run([*bash_prefix,"cp2k.popt job.inp > output.log"], cwd=SCRIPT_DIR)
 
     subprocess.run([*bash_prefix, "mv Passerini-1.restart newiter.restart"], cwd = SCRIPT_DIR)
     subprocess.run([*bash_prefix, "rm -f Passerini*.restart"], cwd=SCRIPT_DIR)
@@ -193,13 +193,13 @@ def main(kappa):
         
         gen_plumed_passerini(plumed_input = plumed_input_biased, file_path = SCRIPT_DIR)
         
-        subprocess.run([*bash_prefix,"srun -n 12 cp2k.popt job_restart.inp > output.log"], cwd=SCRIPT_DIR)
+        # subprocess.run([*bash_prefix,"srun -n 12 cp2k.popt job_restart.inp > output.log"], cwd=SCRIPT_DIR)
         # For command line interface testing
-        # subprocess.run([*bash_prefix,"cp2k.popt job_restart.inp > output.log"], cwd=SCRIPT_DIR)
+        subprocess.run([*bash_prefix,"cp2k.popt job_restart.inp > output.log"], cwd=SCRIPT_DIR)
         subprocess.run([*bash_prefix, "mv Passerini-1.restart newiter.restart"], cwd = SCRIPT_DIR)
         subprocess.run([*bash_prefix, "rm -f Passerini*.restart"], cwd=SCRIPT_DIR)
         subprocess.run([*bash_prefix, f"mv Passerini-pos-1.xyz {kappa[0]}_iteration_Passerini_{iter}-pos.xyz"], cwd = SCRIPT_DIR)
-        subprocess.run([*bash_prefix, f"tail -n +3 {kappa[0]}_iteration_Passerini_{iter}-pos.xyz >> all_{kappa[0]}.xyz"], cwd=SCRIPT_DIR)
+        subprocess.run([*bash_prefix, f"cat {kappa[0]}_iteration_Passerini_{iter}-pos.xyz >> all_{kappa[0]}.xyz"], cwd=SCRIPT_DIR)
         subprocess.run([*bash_prefix,"rm -f PLUMED.OUT Passerini*"], cwd=SCRIPT_DIR)
         subprocess.run([*bash_prefix, f"echo CP2K simulation at iteration {iter} with plumed ends"], cwd=SCRIPT_DIR)
     if not only_heavy:
@@ -209,6 +209,6 @@ def main(kappa):
 
 if __name__ == "__main__":
     kappa = [np.int_(sys.argv[1])]
-    kappa.append(100)
+    kappa.append(20)
     main(kappa)
     subprocess.run([*bash_prefix, "rm -f bck* Passerini* *.OUT"], cwd=SCRIPT_DIR)
