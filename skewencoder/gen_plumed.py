@@ -229,23 +229,28 @@ class PlumedInput:
         if customized_walls is not None:
             for wall in customized_walls:
                 WALL_snippet.append(wall.build())
+        
+        for pair in self.heavy_atom_pairs:
+            temporal_contraint_wall = WALL(label="constr_"+pair[0], is_lower_wall=False, ARG=pair[0], AT=6.0, KAPPA=200)
+            WALL_snippet.append(temporal_contraint_wall)
 
-        temp_AT = self.skew_wall_heavy["pos"] + (self.skew_wall_heavy["offset"] if self.skew_wall_heavy["is_lower_wall"] else (-self.skew_wall_heavy["offset"]))
-        WALL_snippet.append(WALL(label="cv_wall_heavy", 
+        if self.if_biased:
+            temp_AT = self.skew_wall_heavy["pos"] + (self.skew_wall_heavy["offset"] if self.skew_wall_heavy["is_lower_wall"] else (-self.skew_wall_heavy["offset"]))
+            WALL_snippet.append(WALL(label="cv_wall_heavy", 
                                  is_lower_wall=self.skew_wall_heavy["is_lower_wall"],
                                  ARG=self.default_PYTORCH_MODEL_labels[0]+".node-0",
                                  AT=temp_AT,
                                  KAPPA=self.skew_wall_heavy["kappa"]).build()) #cv_heavy 
-        self.default_NN_CV_WALL_labels.append("cv_wall_heavy")
+            self.default_NN_CV_WALL_labels.append("cv_wall_heavy")
 
-        if not self.heavy_atom_only:
-            temp_AT = self.skew_wall_h_adj["pos"] + (self.skew_wall_h_adj["offset"] if self.skew_wall_h_adj["is_lower_wall"] else (-self.skew_wall_h_adj["offset"]))
-            WALL_snippet.append(WALL(label="cv_wall_h_adj", 
+            if not self.heavy_atom_only:
+                temp_AT = self.skew_wall_h_adj["pos"] + (self.skew_wall_h_adj["offset"] if self.skew_wall_h_adj["is_lower_wall"] else (-self.skew_wall_h_adj["offset"]))
+                WALL_snippet.append(WALL(label="cv_wall_h_adj", 
                                     is_lower_wall=self.skew_wall_h_adj["is_lower_wall"],
                                     ARG=self.default_PYTORCH_MODEL_labels[1]+".node-0",
                                     AT=temp_AT,
                                     KAPPA=self.skew_wall_h_adj["kappa"]).build()) #cv_heavy 
-            self.default_NN_CV_WALL_labels.append("cv_wall_h_adj")
+                self.default_NN_CV_WALL_labels.append("cv_wall_h_adj")
 
         return "\n".join(WALL_snippet)
     
