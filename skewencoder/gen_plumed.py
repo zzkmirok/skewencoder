@@ -51,7 +51,7 @@ class PlumedInput:
 
         self.pytorch_model_files : Mapping[str, str] = {}
 
-        self.additional_commands : list[str] = None
+        # self.additional_commands : list[str] = None
 
         self.additional_Plumed_objects : list[PLUMED_OBJ] = None
 
@@ -131,8 +131,12 @@ class PlumedInput:
         if not self.heavy_atom_only:
             plumed_input_file.append(self.gen_plumed_DISTANCE_snippet(self.h_heavy_pairs, self.distance_options))
 
-        if self.additional_commands is not None:
-            plumed_input_file.append(self.gen_additional_commands_snippet())
+        if self.additional_Plumed_objects is not None:
+            additional_snippet = self.gen_additional_commands_snippet()
+            if additional_snippet is not None:
+                plumed_input_file.append(self.gen_additional_commands_snippet())
+        
+        plumed_input_file.append(self.gen_plumed_constr_snippet())
         
         if self.if_biased:
             additional_customize_pytorch_models : list[PYTORCH_MODEL] = []
@@ -166,25 +170,32 @@ class PlumedInput:
         return f"UNITS LENGTH={self.unit} TIME={self.time_step}  #Amstroeng, hartree, fs"
     
     def add_additional_command(self, plumed_object: PLUMED_OBJ = None):
-        if self.additional_commands is None :
-            self.additional_commands : list[str] = []
+        # if self.additional_commands is None :
+        #     self.additional_commands : list[str] = []
         
         if self.additional_Plumed_objects is None:
             self.additional_Plumed_objects : list[PLUMED_OBJ] = []
         
         if plumed_object is not None:
-            self.additional_commands.append(plumed_object.build())
+            # self.additional_commands.append(plumed_object.build())
             self.additional_Plumed_objects.append(plumed_object)
         else:
-            self.additional_commands = None
+            # self.additional_commands = None
             self.additional_Plumed_objects = None
             raise ValueError("No Plumed Object in add_additional_command()")
 
     def gen_additional_commands_snippet(self):
-        if self.additional_commands is None:
+        if self.additional_Plumed_objects is None:
             raise ValueError("No additional commands added")
         else:
-            return "\n".join(self.additional_commands)        
+            additional_obj_not_wall_not_Pytorch = [model for model in self.additional_Plumed_objects if not (isinstance(model, WALL) or isinstance(model, PYTORCH_MODEL))]
+            if len(additional_obj_not_wall_not_Pytorch) > 0:
+                additional_commands = []
+                for model in additional_obj_not_wall_not_Pytorch:
+                    additional_commands.append(model.build())
+                return "\n".join(additional_commands)
+            else:
+                return None       
     
 
     def gen_plumed_DISTANCE_snippet(self, atoms_pair_list : list[tuple[str, tuple]], Options : str | list[str] | None = None) -> str:
@@ -220,6 +231,14 @@ class PlumedInput:
 
         return "\n".join(PYTORCH_MODEL_snippet)
 
+    def gen_plumed_constr_snippet(self):
+        constr_snippet : list[str] = []
+        # TODO: if a C-C-C-C-C chain exist, there will be a problem
+        for pair in self.heavy_atom_pairs:
+            temporal_contraint_wall = WALL(label="constr_"+pair[0], is_lower_wall=False, ARG=[pair[0]], AT=[6.0], KAPPA=[200])
+            constr_snippet.append(temporal_contraint_wall.build())
+        
+        return "\n".join(constr_snippet)
 
             
     def gen_plumed_WALL_snippet(self, customized_walls : list[WALL] | None = None):
@@ -229,28 +248,23 @@ class PlumedInput:
         if customized_walls is not None:
             for wall in customized_walls:
                 WALL_snippet.append(wall.build())
-        
-        for pair in self.heavy_atom_pairs:
-            temporal_contraint_wall = WALL(label="constr_"+pair[0], is_lower_wall=False, ARG=pair[0], AT=6.0, KAPPA=200)
-            WALL_snippet.append(temporal_contraint_wall)
 
-        if self.if_biased:
-            temp_AT = self.skew_wall_heavy["pos"] + (self.skew_wall_heavy["offset"] if self.skew_wall_heavy["is_lower_wall"] else (-self.skew_wall_heavy["offset"]))
-            WALL_snippet.append(WALL(label="cv_wall_heavy", 
-                                 is_lower_wall=self.skew_wall_heavy["is_lower_wall"],
-                                 ARG=self.default_PYTORCH_MODEL_labels[0]+".node-0",
-                                 AT=temp_AT,
-                                 KAPPA=self.skew_wall_heavy["kappa"]).build()) #cv_heavy 
-            self.default_NN_CV_WALL_labels.append("cv_wall_heavy")
+        temp_AT = self.skew_wall_heavy["pos"] + (self.skew_wall_heavy["offset"] if self.skew_wall_heavy["is_lower_wall"] else (-self.skew_wall_heavy["offset"]))
+        WALL_snippet.append(WALL(label="cv_wall_heavy", 
+                                is_lower_wall=self.skew_wall_heavy["is_lower_wall"],
+                                ARG=self.default_PYTORCH_MODEL_labels[0]+".node-0",
+                                AT=temp_AT,
+                                KAPPA=self.skew_wall_heavy["kappa"]).build()) #cv_heavy 
+        self.default_NN_CV_WALL_labels.append("cv_wall_heavy")
 
-            if not self.heavy_atom_only:
-                temp_AT = self.skew_wall_h_adj["pos"] + (self.skew_wall_h_adj["offset"] if self.skew_wall_h_adj["is_lower_wall"] else (-self.skew_wall_h_adj["offset"]))
-                WALL_snippet.append(WALL(label="cv_wall_h_adj", 
-                                    is_lower_wall=self.skew_wall_h_adj["is_lower_wall"],
-                                    ARG=self.default_PYTORCH_MODEL_labels[1]+".node-0",
-                                    AT=temp_AT,
-                                    KAPPA=self.skew_wall_h_adj["kappa"]).build()) #cv_heavy 
-                self.default_NN_CV_WALL_labels.append("cv_wall_h_adj")
+        if not self.heavy_atom_only:
+            temp_AT = self.skew_wall_h_adj["pos"] + (self.skew_wall_h_adj["offset"] if self.skew_wall_h_adj["is_lower_wall"] else (-self.skew_wall_h_adj["offset"]))
+            WALL_snippet.append(WALL(label="cv_wall_h_adj", 
+                                is_lower_wall=self.skew_wall_h_adj["is_lower_wall"],
+                                ARG=self.default_PYTORCH_MODEL_labels[1]+".node-0",
+                                AT=temp_AT,
+                                KAPPA=self.skew_wall_h_adj["kappa"]).build()) #cv_heavy 
+            self.default_NN_CV_WALL_labels.append("cv_wall_h_adj")
 
         return "\n".join(WALL_snippet)
     
