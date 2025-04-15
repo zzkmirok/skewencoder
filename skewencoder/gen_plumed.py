@@ -136,7 +136,7 @@ class PlumedInput:
             if additional_snippet is not None:
                 plumed_input_file.append(self.gen_additional_commands_snippet())
         
-        plumed_input_file.append(self.gen_plumed_constr_snippet())
+        plumed_input_file.append(self.gen_plumed_pairwise_constr_snippet())
         
         if self.if_biased:
             additional_customize_pytorch_models : list[PYTORCH_MODEL] = []
@@ -231,11 +231,11 @@ class PlumedInput:
 
         return "\n".join(PYTORCH_MODEL_snippet)
 
-    def gen_plumed_constr_snippet(self):
+    def gen_plumed_pairwise_constr_snippet(self):
         constr_snippet : list[str] = []
         # TODO: if a C-C-C-C-C chain exist, there will be a problem
         for pair in self.heavy_atom_pairs:
-            temporal_contraint_wall = WALL(label="constr_"+pair[0], is_lower_wall=False, ARG=[pair[0]], AT=[6.0], KAPPA=[200])
+            temporal_contraint_wall = WALL(label="constr_"+pair[0], is_lower_wall=False, ARG=[pair[0]], AT=[8.0], KAPPA=[200])
             constr_snippet.append(temporal_contraint_wall.build())
         
         return "\n".join(constr_snippet)
