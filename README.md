@@ -11,7 +11,7 @@ cd skewencoder
 pip install [-e] .
 ```
 ## How to run
-Set up your environment to run PLUMED with CP2K (or any MD driver compatible with PLUMED) in a `zsh` shell. Follow the example in `test_cases/BAS/chabaDemo.py` to establish your simulation workflow.
+Set up your environment to run PLUMED with CP2K (or any MD driver compatible with PLUMED) in a `zsh` shell. Follow the example in `demos/BAS/chabaDemo.py` to establish your simulation workflow.
  
 ### Adjust your system to the Skewencoder workflow.
 
