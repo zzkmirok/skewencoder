@@ -21,6 +21,7 @@ dependencies = [
     "matplotlib",
     "scipy",
     "KDEpy",
+    "networkx",
     "mlcolvar @ git+https://github.com/zzkmirok/mlcolvar.git@zhikun-mlskew" 
 ]
 requires-python = ">=3.10"

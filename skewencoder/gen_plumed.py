@@ -16,11 +16,22 @@ class PlumedInput:
         self.heavy_atom_only = heavy_atom_only
         self.if_biased = if_biased
         self.Options = Options
+        self.contr_all = False
+        self.vdw_constr = True
 
         if geo_parser is None:
             raise ValueError("Empty input for geo_parser")
         self.adjacent_list : Mapping[int, list[int]] = {key + 1: [value + 1 for value in values] for key, values in geo_parser.adjacent_list.items()}
         self.atom_list : Mapping[str, list[int]] = {key: [value + 1 for value in values] for key, values in geo_parser.atom_list.items()}
+
+        self.vdw_pairs : list[tuple[float, tuple[int, int]]] = None
+        if not heavy_atom_only:
+            if geo_parser.vdw_pairs:
+                self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
+        else:
+            if geo_parser.vdw_pairs_heavy_only:
+                self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs_heavy_only]
+
         self.heavy_atom_pairs : list[tuple[str, tuple[int, int]]] = []
         self.h_heavy_pairs : list[tuple[str, tuple[int, int]]] = None
 
@@ -106,7 +117,13 @@ class PlumedInput:
                     assert isinstance(self.Options[key]["kappa"], float)
                     assert isinstance(self.Options[key]["pos"], float)
                     assert isinstance(self.Options[key]["offset"], float)
-                    self.skew_wall_h_adj = self.Options[key]             
+                    self.skew_wall_h_adj = self.Options[key]       
+                elif key == "constr_all":
+                    assert isinstance(self.Options[key], bool)
+                    self.contr_all = self.Options[key]      
+                elif key == "vdw_constr":
+                    assert isinstance(self.Options[key], bool)
+                    self.vdw_constr = self.Options[key]      
                 else:
                     pass
         
@@ -136,7 +153,13 @@ class PlumedInput:
             if additional_snippet is not None:
                 plumed_input_file.append(self.gen_additional_commands_snippet())
         
-        plumed_input_file.append(self.gen_plumed_constr_snippet())
+        if self.vdw_constr and self.vdw_pairs:
+            vdw_constr_snippet = self.gen_plumed_vdw_constr_snippet()
+            if vdw_constr_snippet:
+                plumed_input_file.append(vdw_constr_snippet)
+
+        if self.contr_all:
+            plumed_input_file.append(self.gen_plumed_constr_snippet())
         
         if self.if_biased:
             additional_customize_pytorch_models : list[PYTORCH_MODEL] = []
@@ -289,3 +312,39 @@ class PlumedInput:
                         print_args.append(obj.label+".*")
         
         return f"PRINT FMT=%g STRIDE={self.print_stride} FILE={self.simulation_folder}/COLVAR ARG={','.join(print_args)}"
+    
+    def gen_plumed_vdw_constr_snippet(self):
+        vdw_constr_snippet : list[str] = []
+
+        vdw_radius = {"C": 1.7, "O": 1.52, "H": 1.2, "N": 1.55}
+
+        for index, vdw_pair in enumerate(self.vdw_pairs):
+            vdw_distance = 0.0
+            bond_type = set()
+            for atom in vdw_pair[1]:
+                for key,value in self.atom_list.items():
+                    if atom in value:
+                        bond_type.add(key)
+            if len(bond_type) == 1:
+                for key, value in vdw_radius.items():
+                    if key in bond_type:
+                        vdw_distance = 2*value
+                        break
+            elif len(bond_type) == 2:
+                for key,value in vdw_radius.items():
+                    if key in bond_type:
+                        vdw_distance += value
+            else:
+                raise ValueError("Failed to read atom pairs with shortest distances among molecules")
+
+
+            if vdw_pair[0] > vdw_distance:
+                vdw_d_label = f"vdw_d_{index}"
+                vdw_constr_snippet.append(DISTANCE(label=vdw_d_label, atoms=vdw_pair[1]).build())
+                vdw_wall_label = f"vdw_wall_{index}"
+                vdw_constr_snippet.append(WALL(label=vdw_wall_label,is_lower_wall=False,ARG=vdw_d_label, AT=vdw_distance, KAPPA=[1000]).build())
+
+        if len(vdw_constr_snippet) == 0:
+            return None
+        else:
+            return  "\n".join(vdw_constr_snippet)

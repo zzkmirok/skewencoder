@@ -20,6 +20,10 @@ from mlcolvar.data import DictDataset, DictModule, DictLoader
 
 from .switchfunction import SwitchFun
 
+import networkx as nx
+
+import itertools
+
 __all__ = ["GeometryParser","load_dataframe", "plumed_to_pandas", "create_dataset_from_files", "load_data"]
 
 
@@ -280,64 +284,6 @@ def load_data(filenames_iter,filenames_all, multiple = 0, bs=0, pattern = r"^([A
     datamodule = DictModule(dataset=[AE_dataset, skewness_dataset], batch_size=batch_size_list)
     return AE_dataset, skewness_dataset, datamodule, AE_df, skewness_df
 
-'''
-def test_datasetFromFile():
-    # Test with unlabeled dataset
-    torch_dataset, pd_dataframe = create_dataset_from_files(
-        file_names=["state_A.dat", "state_B.dat", "state_C.dat"],
-        folder="mlcolvar/tests/data",
-        create_labels=False,
-        load_args=None,
-        filter_args=None,
-        return_dataframe=True,
-        start=0,  # kwargs to load_dataframe
-        stop=5,
-        stride=1,
-    )
-
-    # Test no regex on two states
-    create_dataset_from_files(
-        file_names=["state_A.dat", "state_B.dat"],
-        folder="mlcolvar/tests/data",
-        create_labels=True,
-        load_args=None,
-        filter_args=None,
-        return_dataframe=True,
-        start=0,  # kwargs to load_dataframe
-        stop=5,
-        stride=1,
-    )
-
-    # Test with filter regex on two states
-    dataset = create_dataset_from_files(
-        file_names=["state_A.dat", "state_B.dat"],
-        folder="mlcolvar/tests/data",
-        create_labels=True,
-        load_args=None,
-        filter_args={"regex": "n|o"},
-        return_dataframe=False,
-        start=0,  # kwargs to load_dataframe
-        stop=5,
-        stride=1,
-    )
-
-    def test_modifier(x):
-        return x**2
-
-    # Test with filter regex on two states with modifier
-    create_dataset_from_files(
-        file_names=["state_A.dat", "state_B.dat"],
-        folder="mlcolvar/tests/data",
-        create_labels=True,
-        load_args=None,
-        filter_args={"regex": "n|o"},
-        modifier_function=test_modifier,
-        return_dataframe=True,
-        start=0,  # kwargs to load_dataframe
-        stop=5,
-        stride=1,
-    )
-'''
 class GeometryParser:
     def __init__(self, coord_file : str | pathlib.Path = None):
         if coord_file is None:
@@ -346,27 +292,79 @@ class GeometryParser:
         if isinstance(coord_file, str):
             coord_file = pathlib.Path(coord_file)
         self.coord_file = coord_file
+            
         self.atom_list : Mapping[str, list[int]] = {}
         self.adjacent_list: Mapping[int, list[int]] = {}
-        coordinates_list = []
-
-        with open(self.coord_file, 'r') as f:
-            for index, line in enumerate(f):
-                parts = line.split()
-                atom_type = parts[0]
-                x, y, z = map(float, parts[1:])
-
-            # Update mapping dictionary
-                if atom_type not in self.atom_list:
-                    self.atom_list[atom_type] = []
-                self.atom_list[atom_type].append(index)
-
-            # Append coordinates to list
-                coordinates_list.append([x, y, z])
-        
-        self.coordinates_list = np.array(coordinates_list)
+        coord_list = self.parse_atoms_list(self.coord_file.suffix)
+        if len(coord_list) > 0:
+            self.coordinates_list = np.array(coord_list)
+        else:
+            raise ValueError("Failed to parse atom list")
         self.adjacent_list : Mapping[int, list[int]] = self.parse_adj_list()
 
+        self.connected_components = self.group_components()
+
+        if len(self.connected_components) == 0:
+            raise ValueError("Failed to group components")
+        
+        self.vdw_pairs : list[tuple[float, tuple[int, int]]] = None
+        self.vdw_pairs_heavy_only : list[tuple[float, tuple[int, int]]] = None
+
+        if len(self.connected_components) > 1:
+            self.vdw_pairs = self.gen_vdw_pairs()
+            self.vdw_pairs_heavy_only = self.gen_vdw_pairs(only_heavy=True)
+
+
+
+    def parse_atoms_list(self, file_extention : str):
+        coordinates_list = []
+        if file_extention == ".xyz":
+            # read the last frame TODO: later may read several last frames
+                with open(self.coord_file, 'r') as f:
+                    lines = f.readlines()
+
+                    # Extract number of atoms from first line
+                    num_atoms = int(lines[0].strip())
+
+                    # Calculate total lines per frame (atoms + 2)
+                    lines_per_frame = num_atoms + 2
+
+                    # Find start index for last frame
+                    start_index_last_frame = len(lines) - lines_per_frame
+                    
+                    # Extract coordinates for last frame
+                    last_frame_lines = lines[start_index_last_frame + 2:start_index_last_frame + 2 + num_atoms]
+                
+                for index, line in enumerate(last_frame_lines):
+                    parts = line.split()
+                    atom_type = parts[0]
+                    x, y, z = map(float, parts[1:])
+    
+                # Update mapping dictionary
+                    if atom_type not in self.atom_list:
+                        self.atom_list[atom_type] = []
+                    self.atom_list[atom_type].append(index)
+    
+                # Append coordinates to list
+                    coordinates_list.append([x, y, z])
+        elif file_extention == ".dat":
+            with open(self.coord_file, 'r') as f:
+                for index, line in enumerate(f):
+                    parts = line.split()
+                    atom_type = parts[0]
+                    x, y, z = map(float, parts[1:])
+    
+                # Update mapping dictionary
+                    if atom_type not in self.atom_list:
+                        self.atom_list[atom_type] = []
+                    self.atom_list[atom_type].append(index)
+    
+                # Append coordinates to list
+                    coordinates_list.append([x, y, z])
+        else:
+            raise TypeError("coord_file not match .xyz or .dat")
+        
+        return coordinates_list
     
     def parse_adj_list(self, r_heavy_atoms: float = 1.7, r_H : float = 1.2):
         adj_list: Mapping[int, list[int]] = {}
@@ -390,6 +388,59 @@ class GeometryParser:
                 sw.set_r0(r_heavy_atoms)
         return adj_list
     
+    def group_components(self):
+        G = nx.Graph(self.adjacent_list)
+
+        # Find all connected components (isolated subgraphs)
+        connected_components = list(nx.connected_components(G))
+        
+        return connected_components
+    
+
+
+    def shortest_distance_and_atoms(self, group_a_indices, group_b_indices):
+        coords_a = self.coordinates_list[list(group_a_indices)]
+        coords_b = self.coordinates_list[list(group_b_indices)]
+        
+        # Calculate pairwise distances using broadcasting
+        diff = coords_a[:, np.newaxis] - coords_b[np.newaxis]
+        distances = np.linalg.norm(diff, axis=2)
+        
+        # Find the minimum distance and its indices
+        min_index_flat = np.argmin(distances)
+        
+        # Convert flat index back to row/column indices
+        min_index_a_idx, min_index_b_idx = np.unravel_index(min_index_flat, distances.shape)
+        
+        min_distance = distances[min_index_a_idx][min_index_b_idx]
+        
+        # Extract corresponding node numbers from original groups
+        atom_a_number = list(group_a_indices)[min_index_a_idx]
+        atom_b_number = list(group_b_indices)[min_index_b_idx]
+        
+        return min_distance, (atom_a_number, atom_b_number)
+    
+    def gen_vdw_pairs(self, only_heavy : bool = False):
+        vdw_pairs : list[tuple[float, tuple[int, int]]] = []
+        connected_components = []
+        if only_heavy:
+            nodes_to_remove = set(self.atom_list["H"])
+        # Filter each subgraph
+            for subgraph in self.connected_components:
+                # Remove nodes with label 'H'
+                filtered_subgraph = {node for node in subgraph if node not in nodes_to_remove}
+                connected_components.append(filtered_subgraph)
+            if len(nodes_to_remove) > 0:
+                assert connected_components != self.connected_components
+        else:
+            connected_components = self.connected_components
+        combinations = itertools.combinations(connected_components, 2)
+
+        for subgraph_combo in combinations:
+            min_distance, (atom_a, atom_b) = self.shortest_distance_and_atoms(subgraph_combo[0], subgraph_combo[1])
+            vdw_pairs.append((min_distance, (atom_a, atom_b)))
+
+        return vdw_pairs
 
 
 
