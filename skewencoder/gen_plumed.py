@@ -25,12 +25,16 @@ class PlumedInput:
         self.atom_list : Mapping[str, list[int]] = {key: [value + 1 for value in values] for key, values in geo_parser.atom_list.items()}
 
         self.vdw_pairs : list[tuple[float, tuple[int, int]]] = None
-        if not heavy_atom_only:
-            if geo_parser.vdw_pairs:
-                self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
-        else:
-            if geo_parser.vdw_pairs_heavy_only:
-                self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs_heavy_only]
+        
+        if geo_parser.vdw_pairs:
+            self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
+        # TODO: temporal solution for heavy_only is on
+        # if not heavy_atom_only:
+        #     if geo_parser.vdw_pairs:
+        #         self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
+        # else:
+        #     if geo_parser.vdw_pairs_heavy_only:
+        #         self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs_heavy_only]
 
         self.heavy_atom_pairs : list[tuple[str, tuple[int, int]]] = []
         self.h_heavy_pairs : list[tuple[str, tuple[int, int]]] = None
@@ -342,7 +346,7 @@ class PlumedInput:
                 vdw_d_label = f"vdw_d_{index}"
                 vdw_constr_snippet.append(DISTANCE(label=vdw_d_label, atoms=vdw_pair[1]).build())
                 vdw_wall_label = f"vdw_wall_{index}"
-                vdw_constr_snippet.append(WALL(label=vdw_wall_label,is_lower_wall=False,ARG=vdw_d_label, AT=vdw_distance, KAPPA=[1000]).build())
+                vdw_constr_snippet.append(WALL(label=vdw_wall_label,is_lower_wall=False,ARG=vdw_d_label, AT=vdw_distance, KAPPA=[250]).build())
 
         if len(vdw_constr_snippet) == 0:
             return None
