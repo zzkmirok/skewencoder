@@ -26,15 +26,15 @@ class PlumedInput:
 
         self.vdw_pairs : list[tuple[float, tuple[int, int]]] = None
         
-        if geo_parser.vdw_pairs:
-            self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
+        # if geo_parser.vdw_pairs:
+        #     self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
         # TODO: temporal solution for heavy_only is on
-        # if not heavy_atom_only:
-        #     if geo_parser.vdw_pairs:
-        #         self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
-        # else:
-        #     if geo_parser.vdw_pairs_heavy_only:
-        #         self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs_heavy_only]
+        if not heavy_atom_only:
+            if geo_parser.vdw_pairs:
+                self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
+        else:
+            if geo_parser.vdw_pairs_heavy_only:
+                self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs_heavy_only]
 
         self.heavy_atom_pairs : list[tuple[str, tuple[int, int]]] = []
         self.h_heavy_pairs : list[tuple[str, tuple[int, int]]] = None

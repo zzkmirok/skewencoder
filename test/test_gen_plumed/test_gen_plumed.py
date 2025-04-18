@@ -7,6 +7,7 @@ from skewencoder.plumedkits import DISTANCE, WALL
 import pathlib
 
 data_path = (pathlib.Path(__file__).parent.resolve())
+vdw_kappa = 250 # should match the settings in PlumedInput
 
 def test_PlumedInput_initialization():
     coord_file =(data_path/ "MeNC.dat") 
@@ -26,23 +27,56 @@ C6N5: DISTANCE ATOMS=6,5"""
 
 def test_PlumedInput_gen_vdw_contr():
     coord_file = (data_path/ "coord.dat")
-    coordparser = GeometryParser(coord_file=coord_file)
-    plumed_input2 = PlumedInput(geo_parser=coordparser, if_biased=True, heavy_atom_only= False ,distance_options= ["NOPBC"], pytorch_model_heavy= "./dumbmodel1", pytorch_model_h= "./dumbmodel2", skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1}, skew_wall_h_adj = {"is_lower_wall": False, "kappa": 200.0, "pos": 0.1, "offset": 0.2})
-    assert plumed_input2.gen_plumed_vdw_constr_snippet() == """vdw_d_0: DISTANCE ATOMS=5,9
-vdw_wall_0: UPPER_WALLS ARG=vdw_d_0 AT=2.4 KAPPA=1000 EXP=2.0 EPS=1.0 OFFSET=0.0
-vdw_d_1: DISTANCE ATOMS=5,14
-vdw_wall_1: UPPER_WALLS ARG=vdw_d_1 AT=2.4 KAPPA=1000 EXP=2.0 EPS=1.0 OFFSET=0.0
-vdw_d_2: DISTANCE ATOMS=11,15
-vdw_wall_2: UPPER_WALLS ARG=vdw_d_2 AT=2.9 KAPPA=1000 EXP=2.0 EPS=1.0 OFFSET=0.0"""
-    plumed_input2 = PlumedInput(geo_parser=coordparser, if_biased=True, heavy_atom_only= True ,distance_options= ["NOPBC"], pytorch_model_heavy= "./dumbmodel1", pytorch_model_h= "./dumbmodel2", skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1}, skew_wall_h_adj = {"is_lower_wall": False, "kappa": 200.0, "pos": 0.1, "offset": 0.2})
-    assert plumed_input2.gen_plumed_vdw_constr_snippet() == """vdw_d_0: DISTANCE ATOMS=3,6
-vdw_wall_0: UPPER_WALLS ARG=vdw_d_0 AT=3.2199999999999998 KAPPA=1000 EXP=2.0 EPS=1.0 OFFSET=0.0
-vdw_d_1: DISTANCE ATOMS=3,13
-vdw_wall_1: UPPER_WALLS ARG=vdw_d_1 AT=3.04 KAPPA=1000 EXP=2.0 EPS=1.0 OFFSET=0.0
-vdw_d_2: DISTANCE ATOMS=11,12
-vdw_wall_2: UPPER_WALLS ARG=vdw_d_2 AT=3.4 KAPPA=1000 EXP=2.0 EPS=1.0 OFFSET=0.0"""
+    coord_file2 = (data_path / "test2.xyz")
 
-    assert plumed_input2.build() == """# vim:ft=plumed
+    coordparser = GeometryParser(coord_file=coord_file)
+    coordparser_1 = GeometryParser(coord_file=coord_file2)
+
+    plumed_input1 = PlumedInput(geo_parser=coordparser_1, if_biased=True, heavy_atom_only= True, pytorch_model_heavy= "./dumbmodel1",  skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1})
+
+    assert plumed_input1.gen_plumed_vdw_constr_snippet() == """vdw_d_1: DISTANCE ATOMS=2,6
+vdw_wall_1: UPPER_WALLS ARG=vdw_d_1 AT=3.2199999999999998 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_2: DISTANCE ATOMS=2,11
+vdw_wall_2: UPPER_WALLS ARG=vdw_d_2 AT=3.2199999999999998 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_3: DISTANCE ATOMS=2,12
+vdw_wall_3: UPPER_WALLS ARG=vdw_d_3 AT=3.2199999999999998 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_4: DISTANCE ATOMS=3,6
+vdw_wall_4: UPPER_WALLS ARG=vdw_d_4 AT=3.2199999999999998 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_5: DISTANCE ATOMS=3,11
+vdw_wall_5: UPPER_WALLS ARG=vdw_d_5 AT=3.2199999999999998 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_6: DISTANCE ATOMS=3,12
+vdw_wall_6: UPPER_WALLS ARG=vdw_d_6 AT=3.2199999999999998 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_7: DISTANCE ATOMS=6,11
+vdw_wall_7: UPPER_WALLS ARG=vdw_d_7 AT=3.4 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_8: DISTANCE ATOMS=6,12
+vdw_wall_8: UPPER_WALLS ARG=vdw_d_8 AT=3.4 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_9: DISTANCE ATOMS=11,13
+vdw_wall_9: UPPER_WALLS ARG=vdw_d_9 AT=3.2199999999999998 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_10: DISTANCE ATOMS=4,3
+vdw_wall_10: UPPER_WALLS ARG=vdw_d_10 AT=2.7199999999999998 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_11: DISTANCE ATOMS=5,1
+vdw_wall_11: UPPER_WALLS ARG=vdw_d_11 AT=2.9 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_13: DISTANCE ATOMS=8,11
+vdw_wall_13: UPPER_WALLS ARG=vdw_d_13 AT=2.9 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_14: DISTANCE ATOMS=9,11
+vdw_wall_14: UPPER_WALLS ARG=vdw_d_14 AT=2.9 KAPPA=250 EXP=2.0 EPS=1.0 OFFSET=0.0"""
+
+    plumed_input2 = PlumedInput(geo_parser=coordparser, if_biased=True, heavy_atom_only= False ,distance_options= ["NOPBC"], pytorch_model_heavy= "./dumbmodel1", pytorch_model_h= "./dumbmodel2", skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1}, skew_wall_h_adj = {"is_lower_wall": False, "kappa": 200.0, "pos": 0.1, "offset": 0.2})
+    assert plumed_input2.gen_plumed_vdw_constr_snippet() == f"""vdw_d_0: DISTANCE ATOMS=5,9
+vdw_wall_0: UPPER_WALLS ARG=vdw_d_0 AT=2.4 KAPPA={vdw_kappa} EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_1: DISTANCE ATOMS=5,14
+vdw_wall_1: UPPER_WALLS ARG=vdw_d_1 AT=2.4 KAPPA={vdw_kappa} EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_2: DISTANCE ATOMS=11,15
+vdw_wall_2: UPPER_WALLS ARG=vdw_d_2 AT=2.9 KAPPA={vdw_kappa} EXP=2.0 EPS=1.0 OFFSET=0.0"""
+    plumed_input2 = PlumedInput(geo_parser=coordparser, if_biased=True, heavy_atom_only= True ,distance_options= ["NOPBC"], pytorch_model_heavy= "./dumbmodel1", pytorch_model_h= "./dumbmodel2", skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1}, skew_wall_h_adj = {"is_lower_wall": False, "kappa": 200.0, "pos": 0.1, "offset": 0.2})
+    assert plumed_input2.gen_plumed_vdw_constr_snippet() == f"""vdw_d_0: DISTANCE ATOMS=3,6
+vdw_wall_0: UPPER_WALLS ARG=vdw_d_0 AT=3.2199999999999998 KAPPA={vdw_kappa} EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_1: DISTANCE ATOMS=3,13
+vdw_wall_1: UPPER_WALLS ARG=vdw_d_1 AT=3.04 KAPPA={vdw_kappa} EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_d_2: DISTANCE ATOMS=11,12
+vdw_wall_2: UPPER_WALLS ARG=vdw_d_2 AT=3.4 KAPPA={vdw_kappa} EXP=2.0 EPS=1.0 OFFSET=0.0"""
+
+    assert plumed_input2.build() == f"""# vim:ft=plumed
 UNITS LENGTH=A TIME=0.001  #Amstroeng, hartree, fs
 
 
@@ -77,11 +111,11 @@ O13N10: DISTANCE ATOMS=13,10 NOPBC
 
 
 vdw_d_0: DISTANCE ATOMS=3,6
-vdw_wall_0: UPPER_WALLS ARG=vdw_d_0 AT=3.2199999999999998 KAPPA=1000 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_wall_0: UPPER_WALLS ARG=vdw_d_0 AT=3.2199999999999998 KAPPA={vdw_kappa} EXP=2.0 EPS=1.0 OFFSET=0.0
 vdw_d_1: DISTANCE ATOMS=3,13
-vdw_wall_1: UPPER_WALLS ARG=vdw_d_1 AT=3.04 KAPPA=1000 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_wall_1: UPPER_WALLS ARG=vdw_d_1 AT=3.04 KAPPA={vdw_kappa} EXP=2.0 EPS=1.0 OFFSET=0.0
 vdw_d_2: DISTANCE ATOMS=11,12
-vdw_wall_2: UPPER_WALLS ARG=vdw_d_2 AT=3.4 KAPPA=1000 EXP=2.0 EPS=1.0 OFFSET=0.0
+vdw_wall_2: UPPER_WALLS ARG=vdw_d_2 AT=3.4 KAPPA={vdw_kappa} EXP=2.0 EPS=1.0 OFFSET=0.0
 
 
 cv_heavy: PYTORCH_MODEL FILE=./dumbmodel1 ARG=C1C6,C1C11,C1C12,C6C11,C6C12,C11C12,O2O3,O2O13,O3O13,C1O2,C1O3,C1O13,C6O2,C6O3,C6O13,C11O2,C11O3,C11O13,C12O2,C12O3,C12O13,C1N10,C6N10,C11N10,C12N10,O2N10,O3N10,O13N10

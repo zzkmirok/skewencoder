@@ -377,13 +377,12 @@ class GeometryParser:
                             sw.set_r0(r_H)
                         break
                 distance = np.linalg.norm(self.coordinates_list[i,:] - self.coordinates_list[j,:])
+                if i not in adj_list:
+                    adj_list[i] = []
+                if j not in adj_list:
+                    adj_list[j] = []
                 if sw(distance) > 0.5:
-                    if i not in adj_list:
-                        adj_list[i] = []
                     adj_list[i].append(j)
-
-                    if j not in adj_list:
-                        adj_list[j] = []
                     adj_list[j].append(i)
                 sw.set_r0(r_heavy_atoms)
         return adj_list
@@ -420,25 +419,46 @@ class GeometryParser:
         
         return min_distance, (atom_a_number, atom_b_number)
     
+    """
+    Criterion
+    1. The group with only H should be matched with the closest heavy atom (only one)
+    2. Other groups with at least 1 heavy atom must match with all other groups with heavy atom (besides the group with only H)
+    """
+    
     def gen_vdw_pairs(self, only_heavy : bool = False):
         vdw_pairs : list[tuple[float, tuple[int, int]]] = []
-        connected_components = []
-        if only_heavy:
-            nodes_to_remove = set(self.atom_list["H"])
-        # Filter each subgraph
-            for subgraph in self.connected_components:
-                # Remove nodes with label 'H'
-                filtered_subgraph = {node for node in subgraph if node not in nodes_to_remove}
-                connected_components.append(filtered_subgraph)
-            if len(nodes_to_remove) > 0:
-                assert connected_components != self.connected_components
-        else:
-            connected_components = self.connected_components
-        combinations = itertools.combinations(connected_components, 2)
+        connected_components : Mapping[str, list[set[int]]] = {"with_heavy": [], "only_H": []}
+        nodes_to_remove = set(self.atom_list["H"])
+    # Filter each subgraph
+        for subgraph in self.connected_components:
+            # Remove nodes with label 'H'
+            filtered_subgraph = {node for node in subgraph if node not in nodes_to_remove}
+            if len(filtered_subgraph) == 0:
+                connected_components["only_H"].append(subgraph)
+            else:
+                if only_heavy:
+                    connected_components["with_heavy"].append(filtered_subgraph)
+                else:
+                    connected_components["with_heavy"].append(subgraph)
+        
+        if len(connected_components["with_heavy"]) > 0:
+            combinations = itertools.combinations(connected_components["with_heavy"], 2)
+            for subgraph_combo in combinations:
+                min_distance, (atom_a, atom_b) = self.shortest_distance_and_atoms(subgraph_combo[0], subgraph_combo[1])
+                vdw_pairs.append((min_distance, (atom_a, atom_b)))
 
-        for subgraph_combo in combinations:
-            min_distance, (atom_a, atom_b) = self.shortest_distance_and_atoms(subgraph_combo[0], subgraph_combo[1])
-            vdw_pairs.append((min_distance, (atom_a, atom_b)))
+            if len(connected_components["only_H"]) > 0:
+                for H_group in connected_components["only_H"]:
+                    vdw_pairs_for_compare : list[tuple[float, tuple[int, int]]] = []
+                    for heavy_group in connected_components["with_heavy"]:
+                        min_distance, (atom_a, atom_b) = self.shortest_distance_and_atoms(H_group, heavy_group)
+                        vdw_pairs_for_compare.append((min_distance, (atom_a, atom_b)))
+                    min_id = np.argmin(np.array([vdw_pair[0] for vdw_pair in vdw_pairs_for_compare]))
+                    vdw_pairs.append(vdw_pairs_for_compare[min_id])
+                        
+        else:
+            raise ValueError("System exploded!!!") 
+
 
         return vdw_pairs
 
