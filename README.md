@@ -2,8 +2,11 @@
 ## Installation requirements
 1. PLUMED version >= 2.9.0 and pytorch module linked with `libtorch` is required.
 2. CP2K installation is required and is patched with PLUMED.
-3. For a better implementation create a separate python virtual env and install the autoencoder.
-4. slurm job system is required.
+3. Python version >= 3.10
+4. pytorch version >= 2.3
+5. lightning >= 2.3.3
+6. For a better implementation create a separate python virtual env and install the autoencoder.
+7. slurm job system is required.
 ## How to install
 ```shell
 git clone https://github.com/zzkmirok/skewencoder.git
