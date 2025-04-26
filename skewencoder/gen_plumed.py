@@ -16,11 +16,26 @@ class PlumedInput:
         self.heavy_atom_only = heavy_atom_only
         self.if_biased = if_biased
         self.Options = Options
+        self.contr_all = False
+        self.vdw_constr = True
 
         if geo_parser is None:
             raise ValueError("Empty input for geo_parser")
         self.adjacent_list : Mapping[int, list[int]] = {key + 1: [value + 1 for value in values] for key, values in geo_parser.adjacent_list.items()}
         self.atom_list : Mapping[str, list[int]] = {key: [value + 1 for value in values] for key, values in geo_parser.atom_list.items()}
+
+        self.vdw_pairs : list[tuple[float, tuple[int, int]]] = None
+        
+        # if geo_parser.vdw_pairs:
+        #     self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
+        # TODO: temporal solution for heavy_only is on
+        if not heavy_atom_only:
+            if geo_parser.vdw_pairs:
+                self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
+        else:
+            if geo_parser.vdw_pairs_heavy_only:
+                self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs_heavy_only]
+
         self.heavy_atom_pairs : list[tuple[str, tuple[int, int]]] = []
         self.h_heavy_pairs : list[tuple[str, tuple[int, int]]] = None
 
@@ -51,7 +66,7 @@ class PlumedInput:
 
         self.pytorch_model_files : Mapping[str, str] = {}
 
-        self.additional_commands : list[str] = None
+        # self.additional_commands : list[str] = None
 
         self.additional_Plumed_objects : list[PLUMED_OBJ] = None
 
@@ -106,7 +121,13 @@ class PlumedInput:
                     assert isinstance(self.Options[key]["kappa"], float)
                     assert isinstance(self.Options[key]["pos"], float)
                     assert isinstance(self.Options[key]["offset"], float)
-                    self.skew_wall_h_adj = self.Options[key]             
+                    self.skew_wall_h_adj = self.Options[key]       
+                elif key == "constr_all":
+                    assert isinstance(self.Options[key], bool)
+                    self.contr_all = self.Options[key]      
+                elif key == "vdw_constr":
+                    assert isinstance(self.Options[key], bool)
+                    self.vdw_constr = self.Options[key]      
                 else:
                     pass
         
@@ -131,8 +152,18 @@ class PlumedInput:
         if not self.heavy_atom_only:
             plumed_input_file.append(self.gen_plumed_DISTANCE_snippet(self.h_heavy_pairs, self.distance_options))
 
-        if self.additional_commands is not None:
-            plumed_input_file.append(self.gen_additional_commands_snippet())
+        if self.additional_Plumed_objects is not None:
+            additional_snippet = self.gen_additional_commands_snippet()
+            if additional_snippet is not None:
+                plumed_input_file.append(self.gen_additional_commands_snippet())
+        
+        if self.vdw_constr and self.vdw_pairs:
+            vdw_constr_snippet = self.gen_plumed_vdw_constr_snippet()
+            if vdw_constr_snippet:
+                plumed_input_file.append(vdw_constr_snippet)
+
+        if self.contr_all:
+            plumed_input_file.append(self.gen_plumed_pairwise_constr_snippet())
         
         if self.if_biased:
             additional_customize_pytorch_models : list[PYTORCH_MODEL] = []
@@ -166,25 +197,32 @@ class PlumedInput:
         return f"UNITS LENGTH={self.unit} TIME={self.time_step}  #Amstroeng, hartree, fs"
     
     def add_additional_command(self, plumed_object: PLUMED_OBJ = None):
-        if self.additional_commands is None :
-            self.additional_commands : list[str] = []
+        # if self.additional_commands is None :
+        #     self.additional_commands : list[str] = []
         
         if self.additional_Plumed_objects is None:
             self.additional_Plumed_objects : list[PLUMED_OBJ] = []
         
         if plumed_object is not None:
-            self.additional_commands.append(plumed_object.build())
+            # self.additional_commands.append(plumed_object.build())
             self.additional_Plumed_objects.append(plumed_object)
         else:
-            self.additional_commands = None
+            # self.additional_commands = None
             self.additional_Plumed_objects = None
             raise ValueError("No Plumed Object in add_additional_command()")
 
     def gen_additional_commands_snippet(self):
-        if self.additional_commands is None:
+        if self.additional_Plumed_objects is None:
             raise ValueError("No additional commands added")
         else:
-            return "\n".join(self.additional_commands)        
+            additional_obj_not_wall_not_Pytorch = [model for model in self.additional_Plumed_objects if not (isinstance(model, WALL) or isinstance(model, PYTORCH_MODEL))]
+            if len(additional_obj_not_wall_not_Pytorch) > 0:
+                additional_commands = []
+                for model in additional_obj_not_wall_not_Pytorch:
+                    additional_commands.append(model.build())
+                return "\n".join(additional_commands)
+            else:
+                return None       
     
 
     def gen_plumed_DISTANCE_snippet(self, atoms_pair_list : list[tuple[str, tuple]], Options : str | list[str] | None = None) -> str:
@@ -220,6 +258,14 @@ class PlumedInput:
 
         return "\n".join(PYTORCH_MODEL_snippet)
 
+    def gen_plumed_pairwise_constr_snippet(self):
+        constr_snippet : list[str] = []
+        # TODO: if a C-C-C-C-C chain exist, there will be a problem
+        for pair in self.heavy_atom_pairs:
+            temporal_contraint_wall = WALL(label="constr_"+pair[0], is_lower_wall=False, ARG=[pair[0]], AT=[8.0], KAPPA=[200])
+            constr_snippet.append(temporal_contraint_wall.build())
+        
+        return "\n".join(constr_snippet)
 
             
     def gen_plumed_WALL_snippet(self, customized_walls : list[WALL] | None = None):
@@ -232,19 +278,19 @@ class PlumedInput:
 
         temp_AT = self.skew_wall_heavy["pos"] + (self.skew_wall_heavy["offset"] if self.skew_wall_heavy["is_lower_wall"] else (-self.skew_wall_heavy["offset"]))
         WALL_snippet.append(WALL(label="cv_wall_heavy", 
-                                 is_lower_wall=self.skew_wall_heavy["is_lower_wall"],
-                                 ARG=self.default_PYTORCH_MODEL_labels[0],
-                                 AT=temp_AT,
-                                 KAPPA=self.skew_wall_heavy["kappa"]).build()) #cv_heavy 
+                                is_lower_wall=self.skew_wall_heavy["is_lower_wall"],
+                                ARG=self.default_PYTORCH_MODEL_labels[0]+".node-0",
+                                AT=temp_AT,
+                                KAPPA=self.skew_wall_heavy["kappa"]).build()) #cv_heavy 
         self.default_NN_CV_WALL_labels.append("cv_wall_heavy")
 
         if not self.heavy_atom_only:
             temp_AT = self.skew_wall_h_adj["pos"] + (self.skew_wall_h_adj["offset"] if self.skew_wall_h_adj["is_lower_wall"] else (-self.skew_wall_h_adj["offset"]))
             WALL_snippet.append(WALL(label="cv_wall_h_adj", 
-                                    is_lower_wall=self.skew_wall_h_adj["is_lower_wall"],
-                                    ARG=self.default_PYTORCH_MODEL_labels[1],
-                                    AT=temp_AT,
-                                    KAPPA=self.skew_wall_h_adj["kappa"]).build()) #cv_heavy 
+                                is_lower_wall=self.skew_wall_h_adj["is_lower_wall"],
+                                ARG=self.default_PYTORCH_MODEL_labels[1]+".node-0",
+                                AT=temp_AT,
+                                KAPPA=self.skew_wall_h_adj["kappa"]).build()) #cv_heavy 
             self.default_NN_CV_WALL_labels.append("cv_wall_h_adj")
 
         return "\n".join(WALL_snippet)
@@ -269,4 +315,40 @@ class PlumedInput:
                     if isinstance(obj, PYTORCH_MODEL):
                         print_args.append(obj.label+".*")
         
-        return f"PRINT FMT=%g STRIDE={self.print_stride} FILE={self.simulation_folder}/COLVAR ARG={",".join(print_args)}"
+        return f"PRINT FMT=%g STRIDE={self.print_stride} FILE={self.simulation_folder}/COLVAR ARG={','.join(print_args)}"
+    
+    def gen_plumed_vdw_constr_snippet(self):
+        vdw_constr_snippet : list[str] = []
+
+        vdw_radius = {"C": 1.7, "O": 1.52, "H": 1.2, "N": 1.55}
+
+        for index, vdw_pair in enumerate(self.vdw_pairs):
+            vdw_distance = 0.0
+            bond_type = set()
+            for atom in vdw_pair[1]:
+                for key,value in self.atom_list.items():
+                    if atom in value:
+                        bond_type.add(key)
+            if len(bond_type) == 1:
+                for key, value in vdw_radius.items():
+                    if key in bond_type:
+                        vdw_distance = 2*value
+                        break
+            elif len(bond_type) == 2:
+                for key,value in vdw_radius.items():
+                    if key in bond_type:
+                        vdw_distance += value
+            else:
+                raise ValueError("Failed to read atom pairs with shortest distances among molecules")
+
+
+            if vdw_pair[0] > vdw_distance:
+                vdw_d_label = f"vdw_d_{index}"
+                vdw_constr_snippet.append(DISTANCE(label=vdw_d_label, atoms=vdw_pair[1]).build())
+                vdw_wall_label = f"vdw_wall_{index}"
+                vdw_constr_snippet.append(WALL(label=vdw_wall_label,is_lower_wall=False,ARG=vdw_d_label, AT=vdw_distance, KAPPA=[250]).build())
+
+        if len(vdw_constr_snippet) == 0:
+            return None
+        else:
+            return  "\n".join(vdw_constr_snippet)
