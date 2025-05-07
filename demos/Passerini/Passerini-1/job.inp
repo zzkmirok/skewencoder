@@ -28,7 +28,8 @@
 
   &SUBSYS
     &CELL
-      ABC 10 10 10
+      ABC 15 15 15
+      PERIODIC NONE
     &END CELL
     &COORD
       @include 'coord.dat'
