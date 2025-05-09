@@ -90,9 +90,9 @@ def transform_colvar_key(colvar_key: str, pattern: str = r"^([A-Za-z]+)\d+([A-Za
 
 
 
-def parse_unbiased_colvar(colvar_file: str = f"{SCRIPT_DIR}/COLVAR", std_tol: float = 0.05, r0_tol: float = 1.6, transform_colvar_key : Callable[[str],str] = partial(transform_colvar_key, pattern = r"^([A-Za-z]+)\d+([A-Za-z]+)\d+$")):
+def parse_unbiased_colvar(colvar_file: str = f"{SCRIPT_DIR}/COLVAR", prop : int = 1, std_tol: float = 0.05, r0_tol: float = 1.6, transform_colvar_key : Callable[[str],str] = partial(transform_colvar_key, pattern = r"^([A-Za-z]+)\d+([A-Za-z]+)\d+$")):
     colvar_df = load_dataframe(colvar_file)
-    last_rows = colvar_df["time"].values.shape[0]
+    last_rows = colvar_df["time"].values.shape[0] // prop
     bond_type_dict : Mapping[str, Mapping[str, Union[float, Tuple[int, int]]]] = {} #TODO: should be bond type dict?
     heavy_atom_pairs_list: Sequence[str] = []
     # pattern = r"^([A-Za-z]+)\d+([A-Za-z]+)\d+$" # Pattern depends on the keys in COLVAR file
