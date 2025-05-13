@@ -22,13 +22,13 @@
 #SBATCH --mem-per-cpu=2541M
 
 ### Name the job.
-#SBATCH --job-name=k<KAPPA>_Chaba_biased
+#SBATCH --job-name=k<KAPPA>_Passerini_biased
 
 # Outputs of the job.
-#SBATCH --output=k<KAPPA>_out_Chaba.%J.txt
+#SBATCH --output=k<KAPPA>_out_Passerini.%J.txt
 
 # Wall clock limit.
-#SBATCH --time=48:30:00
+#SBATCH --time=72:30:00
 echo ${SLURM_JOB_ID}
 if [ -n "${SLURM_JOB_ID}" ] ; then
 SCRIPT_NAME=$(scontrol show job "$SLURM_JOB_ID" | awk -F= '/Command=/{print $2}')
@@ -41,4 +41,4 @@ cd $SCRIPT_PATH
 
 # restore all module for local cp2k
 source /rwthfs/rz/cluster/home/yy508225/PythonVENVCollections/CP2kPlumed/bin/activate
-python chabaDemo.py <KAPPA>
+python passeriniDemo.py <KAPPA>

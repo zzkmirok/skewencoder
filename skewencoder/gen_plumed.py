@@ -80,6 +80,7 @@ class PlumedInput:
         self.skew_wall_h_adj : Mapping[str, float | bool] = None
         self.print_stride : int = 10
         self.simulation_folder : str = "."
+        self.additional_blocks = None
         # TODO: Is it normal to add assertion here?
         if self.Options is not None:
             for key in self.Options.keys():
@@ -147,6 +148,9 @@ class PlumedInput:
     def build(self):
         plumed_input_file : list[str] = ["\n".join([self.gen_plumed_header(), self.gen_plumed_UNITS()])]
 
+        if self.additional_blocks is not None:
+            plumed_input_file.append(self.additional_blocks)
+
         plumed_input_file.append(self.gen_plumed_DISTANCE_snippet(self.heavy_atom_pairs, self.distance_options))
 
         if not self.heavy_atom_only:
@@ -186,6 +190,9 @@ class PlumedInput:
 
         return "\n\n\n".join(plumed_input_file)
     
+    #TODO: temperal solution for convenience
+    def gen_plumed_additional_blocks(self, snippets: str = None):
+        self.additional_blocks = snippets 
 
     # TODO: later move to plumedkit.py
     def gen_plumed_header(self):

@@ -1,5 +1,5 @@
 &GLOBAL
-  PROJECT Passerini
+  PROJECT Chaba
   RUN_TYPE MD
   SEED 300
   PRINT_LEVEL MEDIUM
@@ -28,7 +28,8 @@
 
   &SUBSYS
     &CELL
-      ABC 10 10 10
+      ABC 9.514 9.514 9.514
+      ALPHA_BETA_GAMMA 94.07 94.07 94.07
     &END CELL
     &COORD
       @include 'coord.dat'
@@ -49,7 +50,7 @@
       &END EACH
     &END RESTART_HISTORY
     &TRAJECTORY
-      FORMAT XYZ 
+      FORMAT PDB 
       &EACH
         MD 1
       &END EACH
@@ -60,7 +61,7 @@
     ENSEMBLE NVT
     TIMESTEP [fs] 0.5
     STEPS 5000
-    TEMPERATURE 300
+    TEMPERATURE 473
     &THERMOSTAT
       REGION GLOBAL
       TYPE CSVR
