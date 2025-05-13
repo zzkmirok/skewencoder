@@ -1,7 +1,48 @@
-# Installation
+# Tutorial
+
+If you are looking for a simple tutorial, you can start with following the step-by-step tutorial in the notebook `Tutorial/chabaDemo.ipynb`
+
+## Settig up the Tutorial
+
+```shell
+mkdir -p tutorial4loxodynamics
+cd tutorial4loxodynamics
+git clone https://github.com/zzkmirok/skewencoder.git 
+cp -r skewencoder/Tutorial . 
+cd Tutorial
+```
+
+Before starting the tutorial in a jupyter notebook, make sure that the following installation requirements are satisfied.
+
+> **Installation requirements for Jupyter Notebook Tutorial**
+> 1. PLUMED version >= 2.9.0 and pytorch module linked with `libtorch` is required.
+> 2. CP2K installation is required and is already patched with PLUMED.
+> 3. Python version >= 3.10
+> 4. `Jupyter` and `ipykernel` should be available in the Python.
+
+In the `Tutorial` folder there is an example `activate.sh` file demonstrating how to use the `module` system for the configuration of required env variables.
+
+```shell
+source ./activate.sh # Not necessary
+```
+
+The step above can be skipped if CP2K patched with PLUMED is already available in your `$PATH`. 
+
+The configuration of the environment will be further verified in the Jupyter Notebook tutorial.
+
+Then one can start the tutorial by:
+
+```shell
+jupyter notebook
+```
+
+and open the `chabaDemo.ipynb`.
+
+# Customized Utilization
+The following installation requirements must be satisfied when one want to installed `skewencoder` and use the package immediately to run demos.
 ## Installation requirements
 1. PLUMED version >= 2.9.0 and pytorch module linked with `libtorch` is required.
-2. CP2K installation is required and is patched with PLUMED.
+2. CP2K installation is required and is already patched with PLUMED.
 3. Python version >= 3.10
 4. pytorch version >= 2.3
 5. lightning >= 2.3.3
