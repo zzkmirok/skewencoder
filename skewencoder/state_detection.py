@@ -49,6 +49,7 @@ class Bond_type_lib:
     # TODO: first just for KHP, also could be static?
     # TODO: Not only update m, n, but also possible bonds (heavy atom pairs) that was not read from unbiased colvar
     def build_default(self):
+        self.bond_type_dict["H-H"] = {"m,n" : (12, 6), "bond length": 0.75}
         self.bond_type_dict["C-C"] = {"m,n" : (12, 6), "bond length": 1.5}
         self.bond_type_dict["C-O"] = {"m,n" : (12, 6), "bond length": 1.5}
         self.bond_type_dict["O-O"] = {"m,n" : (12, 6), "bond length": 1.5}
@@ -56,8 +57,8 @@ class Bond_type_lib:
         self.bond_type_dict["N-O"] = {"m,n" : (12, 6), "bond length": 1.5}
         self.bond_type_dict["H-O"] = {"m,n" : (12, 6), "bond length": 1.1} # including OH bond
         self.bond_type_dict["H-C"] = {"m,n" : (12, 6), "bond length": 1.1} # including CH bond
-        self.bond_type_dict["O-Cu"] = {"m,n" : (12, 6), "bond length": 1.5} # including CH bond
-        self.bond_type_dict["H-Cu"] = {"m,n" : (12, 6), "bond length": 1.2} # including CH bond
+        self.bond_type_dict["O-Cu"] = {"m,n" : (12, 6), "bond length": 2.25} # including CH bond
+        self.bond_type_dict["H-Cu"] = {"m,n" : (12, 6), "bond length": 1.3} # including CH bond
         self.bond_type_dict["C-Cu"] = {"m,n" : (12, 6), "bond length": 1.4} # including CH bond
     # TODO: convert to capital letters and change labels in BAS
     def _update_m_n(self):
