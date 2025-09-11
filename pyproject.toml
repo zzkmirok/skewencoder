@@ -16,7 +16,7 @@ license = { text = "MIT" }
 dependencies = [
     "lightning",
     "torch",
-    "numpy",
+    "numpy<2",
     "pandas",
     "matplotlib",
     "scipy",
