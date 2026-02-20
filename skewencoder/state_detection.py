@@ -36,6 +36,7 @@ atomic_numbers = {
     "F": 9,    # Fluorine
     "Ne": 10,   # Neon
     "Cu": 29,
+    "Ru": 44,
     # Add more elements as needed...
 }
 
@@ -55,11 +56,14 @@ class Bond_type_lib:
         self.bond_type_dict["O-O"] = {"m,n" : (12, 6), "bond length": 1.5}
         self.bond_type_dict["C-N"] = {"m,n" : (12, 6), "bond length": 1.5}
         self.bond_type_dict["N-O"] = {"m,n" : (12, 6), "bond length": 1.5}
-        self.bond_type_dict["H-O"] = {"m,n" : (12, 6), "bond length": 1.1} # including OH bond
-        self.bond_type_dict["H-C"] = {"m,n" : (12, 6), "bond length": 1.1} # including CH bond
-        self.bond_type_dict["O-Cu"] = {"m,n" : (12, 6), "bond length": 2.25} # including CH bond
-        self.bond_type_dict["H-Cu"] = {"m,n" : (12, 6), "bond length": 1.3} # including CH bond
-        self.bond_type_dict["C-Cu"] = {"m,n" : (12, 6), "bond length": 1.4} # including CH bond
+        self.bond_type_dict["H-O"] = {"m,n" : (12, 6), "bond length": 1.1} 
+        self.bond_type_dict["H-C"] = {"m,n" : (12, 6), "bond length": 1.1} 
+        self.bond_type_dict["O-Cu"] = {"m,n" : (12, 6), "bond length": 2.25}
+        self.bond_type_dict["H-Cu"] = {"m,n" : (12, 6), "bond length": 1.3} 
+        self.bond_type_dict["C-Cu"] = {"m,n" : (12, 6), "bond length": 1.4} 
+        self.bond_type_dict["N-Ru"] = {"m,n" : (12, 6), "bond length": 2.2} 
+        self.bond_type_dict["H-Ru"] = {"m,n" : (12, 6), "bond length": 1.9} 
+        self.bond_type_dict["H-N"] = {"m,n" : (12, 6), "bond length": 1.02} 
     # TODO: convert to capital letters and change labels in BAS
     def _update_m_n(self):
         self.bond_type_dict["c-c"] = {"m,n" : (12, 6)}
