@@ -1,16 +1,15 @@
-import torch
-from torch.utils.data import DataLoader
 import lightning as pl
-from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 import numpy as np
 import pandas as pd
-from mlcolvar.data import DictModule, DictLoader
+import torch
+from lightning.pytorch.callbacks.early_stopping import EarlyStopping
 from mlcolvar.core.transform import Normalization
 from mlcolvar.core.transform.utils import Statistics
+from mlcolvar.cvs import AutoEncoderCV, MultiTaskCV
+from mlcolvar.data import DictLoader, DictModule
 from mlcolvar.utils.trainer import MetricsCallback
+from torch.utils.data import DataLoader
 
-from mlcolvar.cvs import MultiTaskCV
-from mlcolvar.cvs import AutoEncoderCV
 from skewencoder.skewloss import SkewLoss
 
 __all__ = ["skewencoder_model_init", "skewencoder_model_trainer","skewencoder_model_normalization", "cv_eval"]
@@ -41,10 +40,12 @@ def skewencoder_model_init(AE_dataset, encoder_layers, loss_coeff, iter=0, PREV_
 
 def skewencoder_model_trainer(model, datamodule, iter_folder, **kargs):
     # define callbacks
+    acc = kargs.get('accelerator', 'auto')
+    dev = kargs.get('devices', 1)
     metrics = MetricsCallback()
     early_stopping = EarlyStopping(monitor="valid_loss", min_delta=1e-5, patience=10)
     # define trainer
-    trainer = pl.Trainer(accelerator='cpu',callbacks=[metrics, early_stopping], max_epochs=1000, enable_checkpointing=False, enable_model_summary=False, log_every_n_steps=10)
+    trainer = pl.Trainer(accelerator=acc, devices = dev, num_nodes = 1, strategy = 'auto' , callbacks=[metrics, early_stopping], max_epochs=1000, enable_checkpointing=False, enable_model_summary=False, log_every_n_steps=10)
     # fit
     trainer.fit(model,datamodule)
     subfix = None

@@ -2,24 +2,22 @@ __all__ = ["Bond_type_lib",
            "transform_colvar_key",
            "parse_unbiased_colvar",
            "State_detection"]
-import sys
 import os
+import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # print(SCRIPT_DIR)
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
-from skewencoder.switchfunction import SwitchFun 
-import numpy as np
-from collections.abc import Sequence, Mapping, Set
-from typing import Tuple, Union
-from skewencoder.io import load_dataframe
-
-from typing import Callable
-
-from functools import partial
-
 import re
+from collections.abc import Mapping, Sequence, Set
+from functools import partial
+from typing import Callable, Tuple, Union
+
+import numpy as np
+
+from skewencoder.io import load_dataframe
+from skewencoder.switchfunction import SwitchFun
 
 # TODO: should be static
 
@@ -64,6 +62,7 @@ class Bond_type_lib:
         self.bond_type_dict["N-Ru"] = {"m,n" : (12, 6), "bond length": 2.2} 
         self.bond_type_dict["H-Ru"] = {"m,n" : (12, 6), "bond length": 1.9} 
         self.bond_type_dict["H-N"] = {"m,n" : (12, 6), "bond length": 1.02} 
+        self.bond_type_dict["N-N"] = {"m,n" : (12, 6), "bond length": 1.45} 
     # TODO: convert to capital letters and change labels in BAS
     def _update_m_n(self):
         self.bond_type_dict["c-c"] = {"m,n" : (12, 6)}
