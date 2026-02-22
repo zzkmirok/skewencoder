@@ -18,7 +18,6 @@ COMM = MPI.COMM_WORLD
 RANK = COMM.Get_rank()
 
 import argparse
-
 import tomllib
 
 parser = argparse.ArgumentParser(description="Read TOML config")
@@ -122,12 +121,9 @@ def additional_biases():
 
 import skewencoder.state_detection as STADECT
 from skewencoder.io import load_data
-from skewencoder.model_skewencoder import (
-    cv_eval,
-    skewencoder_model_init,
-    skewencoder_model_normalization,
-    skewencoder_model_trainer,
-)
+from skewencoder.model_skewencoder import (cv_eval, skewencoder_model_init,
+                                           skewencoder_model_normalization,
+                                           skewencoder_model_trainer)
 
 RESULTS_FOLDER = "./results"
 UNBIASED_FOLDER = "./unbiased"
@@ -250,8 +246,7 @@ cv: PYTORCH_MODEL FILE={model_name} ARG={",".join(SKEWENCODER_INPUT_LIST)}
             f"""
 # Energy wall for aes cv
 wall: {walltype} ARG=cv.node-0 AT={pos + offset} KAPPA={kappa} ExP=2 EPS=1 OFFSET=0.0
-PRINT FMT=%g STRIDE={CONFIG["plumed"]["stride"]} FILE={simulation_folder}/COLVAR ARG={",".join(ENV_BIAS_LIST) if len(ENV_BIAS_LIST) > 0 else ""}{"," if len(ENV_BIAS_LIST) > 0 else ""}{",".join(DESCRIPTOR_LIST) if len(DESCRIPTOR_LIST) > 0 else ""}{"," if len(DESCRIPTOR_LIST) > 0 else ""}{",".join(CUSTOM_DESCRIPTOR_LIST) if len(CUSTOM_DESCRIPTOR_LIST) > 0 else ""}
-,cv.*""",
+PRINT FMT=%g STRIDE={CONFIG["plumed"]["stride"]} FILE={simulation_folder}/COLVAR ARG={",".join(ENV_BIAS_LIST) if len(ENV_BIAS_LIST) > 0 else ""}{"," if len(ENV_BIAS_LIST) > 0 else ""}{",".join(DESCRIPTOR_LIST) if len(DESCRIPTOR_LIST) > 0 else ""}{"," if len(DESCRIPTOR_LIST) > 0 else ""}{",".join(CUSTOM_DESCRIPTOR_LIST) if len(CUSTOM_DESCRIPTOR_LIST) > 0 else ""},cv.*""",
             file=f,
         )
 
@@ -365,7 +360,7 @@ def main(kappa):
         )
         subprocess.run([*bash_prefix, f"rm -f {plumed_log}"], cwd=SCRIPT_DIR)
         # TODO: change bond_type_lib
-        n_descriptors = len(CONFIG["plumed"]["descriptors"])
+        n_descriptors = len(SKEWENCODER_INPUT_LIST)
         hidden_layers = CONFIG["loxodynamics"]["skewencoder"]["hidden_layers"]
         encoder_layers = [n_descriptors, *hidden_layers, 1]
         threshold = CONFIG["loxodynamics"]["skewencoder"]["threshold"]

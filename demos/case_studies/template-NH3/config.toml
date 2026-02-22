@@ -3,7 +3,7 @@ driver = "lammps"
 [simulation]
 mlip = "mace"
 model = "MACE-matpes-pbe-omat-ft.model-lammps.pt" # "mace-mp-0b3-medium.model-lammps.pt"
-system = "NH3-v1-v2"
+system = "NH3-v1-v2-opt"
 systems_folder = "../systems"
 model_folder = "../models"
 n_gpus = 1
@@ -14,8 +14,8 @@ frozen_layers = "1:12 25:36 49:60"
 config_folder = "../simulation"
 
 [loxodynamics]
-kappa = 200
-max_iter = 0
+kappa = 300
+max_iter = 1
 batch_size = 100
 warm_start = false
 state_detection = false
@@ -141,7 +141,7 @@ custom_descriptors = [
 ]
 
 input_regex = '^([A-Za-z]+)\d+([A-Za-z]+)\d+_z$'
-detector_regex = '^([A-Za-z]+)\d+([A-Za-z]+)\d+_z$'
+detector_regex = '^([A-Za-z]+)\d+([A-Za-z]+)\d+$'
 
 # descriptors = [
 # "N73Ru13",

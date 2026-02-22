@@ -216,8 +216,8 @@ class State_detection:
 
     def __call__(self, colvar_file: str):  # TODO: directly colvar file?
         colvar_df = load_dataframe(colvar_file)
-        colvar_df = colvar_df.filter(regex=self.pattern)
         last_rows = colvar_df["time"].values.shape[0] // 4
+        colvar_df = colvar_df.filter(regex=self.pattern)
         is_stable_state = True
         current_state_connectivity = np.zeros(self.n_heay_atom_pairs, dtype=bool)
         # TODO: discover if I update the values via colvar_df.update({key: self.sw_dict[current_bond_type](value)}), my value will then be updated?
