@@ -17,6 +17,8 @@ config_folder = "../simulation"
 kappa = 200
 max_iter = 0
 batch_size = 100
+warm_start = false
+state_detection = false
 
 [loxodynamics.skewencoder]
 hidden_layers = [150, 80, 40, 10, 5]
@@ -26,89 +28,193 @@ threshold = 0.3
 log_file = "plumed.log"
 stride = 10
 env_bias = """
-WHOLEMOLECULES ENTITY0=13-24,37-48,61-72
-com_Ru: COM ATOMS=13-24,37-48,61-72
+com_Ru: CENTER ATOMS=13-24,37-48,61-72
 dist73: DISTANCE ATOMS=73,com_Ru COMPONENTS
 dist77: DISTANCE ATOMS=77,com_Ru COMPONENTS
 abs_d73_z: MATHEVAL ARG=dist73.z FUNC=abs(x) PERIODIC=NO
 abs_d77_z: MATHEVAL ARG=dist77.z FUNC=abs(x) PERIODIC=NO
-uwall1: UPPER_WALLS ARG=abs_d73_z AT=6.0 KAPPA=150.0 EXP=2
-uwall2: UPPER_WALLS ARG=abs_d77_z AT=6.0 KAPPA=150.0 EXP=2
+uwall1: UPPER_WALLS ARG=abs_d73_z AT=7.0 KAPPA=150.0 EXP=2
+uwall2: UPPER_WALLS ARG=abs_d77_z AT=7.0 KAPPA=150.0 EXP=2
 """
+env_bias_cv = [
+    "uwall1.bias",
+    "uwall2.bias",
+]
+
 cv_type = "DISTANCE"
 pbc = true
 descriptors = [
-"N73Ru13",
-"N73Ru14",
-"N73Ru15",
-"N73Ru16",
-"N73Ru17",
-"N73Ru18",
-"N73Ru19",
-"N73Ru20",
-"N73Ru21",
-"N73Ru22",
-"N73Ru23",
-"N73Ru24",
-"N73Ru37",
-"N73Ru38",
-"N73Ru39",
-"N73Ru40",
-"N73Ru41",
-"N73Ru42",
-"N73Ru43",
-"N73Ru44",
-"N73Ru45",
-"N73Ru46",
-"N73Ru47",
-"N73Ru48",
-"N73Ru61",
-"N73Ru62",
-"N73Ru63",
-"N73Ru64",
-"N73Ru65",
-"N73Ru66",
-"N73Ru67",
-"N73Ru68",
-"N73Ru69",
-"N73Ru70",
-"N73Ru71",
-"N73Ru72",
-"N77Ru13",
-"N77Ru14",
-"N77Ru15",
-"N77Ru16",
-"N77Ru17",
-"N77Ru18",
-"N77Ru19",
-"N77Ru20",
-"N77Ru21",
-"N77Ru22",
-"N77Ru23",
-"N77Ru24",
-"N77Ru37",
-"N77Ru38",
-"N77Ru39",
-"N77Ru40",
-"N77Ru41",
-"N77Ru42",
-"N77Ru43",
-"N77Ru44",
-"N77Ru45",
-"N77Ru46",
-"N77Ru47",
-"N77Ru48",
-"N77Ru61",
-"N77Ru62",
-"N77Ru63",
-"N77Ru64",
-"N77Ru65",
-"N77Ru66",
-"N77Ru67",
-"N77Ru68",
-"N77Ru69",
-"N77Ru70",
-"N77Ru71",
-"N77Ru72",
-"N73N77",
+    "H74N73",
+    "H75N73",
+    "H76N73",
+    "H78N73",
+    "H79N73",
+    "H80N73",
+    "H74N77",
+    "H75N77",
+    "H76N77",
+    "H78N77",
+    "H79N77",
+    "H80N77",
+    "N73N77",
 ]
+custom_cv_definition = """
+WHOLEMOLECULES ENTITY0=13-24 ENTITY1=37-48 ENTITY2=61-72
+Layer1: CENTER ATOMS=13-24
+Layer2: CENTER ATOMS=37-48
+Layer3: CENTER ATOMS=61-72
+N73Layer1: DISTANCE ATOMS=73,Layer1 COMPONENTS
+N73Layer2: DISTANCE ATOMS=73,Layer2 COMPONENTS
+N73Layer3: DISTANCE ATOMS=73,Layer3 COMPONENTS
+N77Layer1: DISTANCE ATOMS=77,Layer1 COMPONENTS
+N77Layer2: DISTANCE ATOMS=77,Layer2 COMPONENTS
+N77Layer3: DISTANCE ATOMS=77,Layer3 COMPONENTS
+H74Layer1: DISTANCE ATOMS=74,Layer1 COMPONENTS
+H74Layer2: DISTANCE ATOMS=74,Layer2 COMPONENTS
+H74Layer3: DISTANCE ATOMS=74,Layer3 COMPONENTS
+H75Layer1: DISTANCE ATOMS=75,Layer1 COMPONENTS
+H75Layer2: DISTANCE ATOMS=75,Layer2 COMPONENTS
+H75Layer3: DISTANCE ATOMS=75,Layer3 COMPONENTS
+H76Layer1: DISTANCE ATOMS=76,Layer1 COMPONENTS
+H76Layer2: DISTANCE ATOMS=76,Layer2 COMPONENTS
+H76Layer3: DISTANCE ATOMS=76,Layer3 COMPONENTS
+H78Layer1: DISTANCE ATOMS=78,Layer1 COMPONENTS
+H78Layer2: DISTANCE ATOMS=78,Layer2 COMPONENTS
+H78Layer3: DISTANCE ATOMS=78,Layer3 COMPONENTS
+H79Layer1: DISTANCE ATOMS=79,Layer1 COMPONENTS
+H79Layer2: DISTANCE ATOMS=79,Layer2 COMPONENTS
+H79Layer3: DISTANCE ATOMS=79,Layer3 COMPONENTS
+H80Layer1: DISTANCE ATOMS=80,Layer1 COMPONENTS
+H80Layer2: DISTANCE ATOMS=80,Layer2 COMPONENTS
+H80Layer3: DISTANCE ATOMS=80,Layer3 COMPONENTS
+
+N73Layer1_z: MATHEVAL ARG=N73Layer1.z FUNC=abs(x) PERIODIC=NO
+N73Layer2_z: MATHEVAL ARG=N73Layer2.z FUNC=abs(x) PERIODIC=NO
+N73Layer3_z: MATHEVAL ARG=N73Layer3.z FUNC=abs(x) PERIODIC=NO
+N77Layer1_z: MATHEVAL ARG=N77Layer1.z FUNC=abs(x) PERIODIC=NO
+N77Layer2_z: MATHEVAL ARG=N77Layer2.z FUNC=abs(x) PERIODIC=NO
+N77Layer3_z: MATHEVAL ARG=N77Layer3.z FUNC=abs(x) PERIODIC=NO
+H74Layer1_z: MATHEVAL ARG=H74Layer1.z FUNC=abs(x) PERIODIC=NO
+H74Layer2_z: MATHEVAL ARG=H74Layer2.z FUNC=abs(x) PERIODIC=NO
+H74Layer3_z: MATHEVAL ARG=H74Layer3.z FUNC=abs(x) PERIODIC=NO
+H75Layer1_z: MATHEVAL ARG=H75Layer1.z FUNC=abs(x) PERIODIC=NO
+H75Layer2_z: MATHEVAL ARG=H75Layer2.z FUNC=abs(x) PERIODIC=NO
+H75Layer3_z: MATHEVAL ARG=H75Layer3.z FUNC=abs(x) PERIODIC=NO
+H76Layer1_z: MATHEVAL ARG=H76Layer1.z FUNC=abs(x) PERIODIC=NO
+H76Layer2_z: MATHEVAL ARG=H76Layer2.z FUNC=abs(x) PERIODIC=NO
+H76Layer3_z: MATHEVAL ARG=H76Layer3.z FUNC=abs(x) PERIODIC=NO
+H78Layer1_z: MATHEVAL ARG=H78Layer1.z FUNC=abs(x) PERIODIC=NO
+H78Layer2_z: MATHEVAL ARG=H78Layer2.z FUNC=abs(x) PERIODIC=NO
+H78Layer3_z: MATHEVAL ARG=H78Layer3.z FUNC=abs(x) PERIODIC=NO
+H79Layer1_z: MATHEVAL ARG=H79Layer1.z FUNC=abs(x) PERIODIC=NO
+H79Layer2_z: MATHEVAL ARG=H79Layer2.z FUNC=abs(x) PERIODIC=NO
+H79Layer3_z: MATHEVAL ARG=H79Layer3.z FUNC=abs(x) PERIODIC=NO
+H80Layer1_z: MATHEVAL ARG=H80Layer1.z FUNC=abs(x) PERIODIC=NO
+H80Layer2_z: MATHEVAL ARG=H80Layer2.z FUNC=abs(x) PERIODIC=NO
+H80Layer3_z: MATHEVAL ARG=H80Layer3.z FUNC=abs(x) PERIODIC=NO
+"""
+custom_descriptors = [
+"N73Layer1_z",
+"N73Layer2_z",
+"N73Layer3_z",
+"N77Layer1_z",
+"N77Layer2_z",
+"N77Layer3_z",
+"H74Layer1_z",
+"H74Layer2_z",
+"H74Layer3_z",
+"H75Layer1_z",
+"H75Layer2_z",
+"H75Layer3_z",
+"H76Layer1_z",
+"H76Layer2_z",
+"H76Layer3_z",
+"H78Layer1_z",
+"H78Layer2_z",
+"H78Layer3_z",
+"H79Layer1_z",
+"H79Layer2_z",
+"H79Layer3_z",
+"H80Layer1_z",
+"H80Layer2_z",
+"H80Layer3_z",
+]
+
+input_regex = '^([A-Za-z]+)\d+([A-Za-z]+)\d+_z$'
+detector_regex = '^([A-Za-z]+)\d+([A-Za-z]+)\d+_z$'
+
+# descriptors = [
+# "N73Ru13",
+# "N73Ru14",
+# "N73Ru15",
+# "N73Ru16",
+# "N73Ru17",
+# "N73Ru18",
+# "N73Ru19",
+# "N73Ru20",
+# "N73Ru21",
+# "N73Ru22",
+# "N73Ru23",
+# "N73Ru24",
+# "N73Ru37",
+# "N73Ru38",
+# "N73Ru39",
+# "N73Ru40",
+# "N73Ru41",
+# "N73Ru42",
+# "N73Ru43",
+# "N73Ru44",
+# "N73Ru45",
+# "N73Ru46",
+# "N73Ru47",
+# "N73Ru48",
+# "N73Ru61",
+# "N73Ru62",
+# "N73Ru63",
+# "N73Ru64",
+# "N73Ru65",
+# "N73Ru66",
+# "N73Ru67",
+# "N73Ru68",
+# "N73Ru69",
+# "N73Ru70",
+# "N73Ru71",
+# "N73Ru72",
+# "N77Ru13",
+# "N77Ru14",
+# "N77Ru15",
+# "N77Ru16",
+# "N77Ru17",
+# "N77Ru18",
+# "N77Ru19",
+# "N77Ru20",
+# "N77Ru21",
+# "N77Ru22",
+# "N77Ru23",
+# "N77Ru24",
+# "N77Ru37",
+# "N77Ru38",
+# "N77Ru39",
+# "N77Ru40",
+# "N77Ru41",
+# "N77Ru42",
+# "N77Ru43",
+# "N77Ru44",
+# "N77Ru45",
+# "N77Ru46",
+# "N77Ru47",
+# "N77Ru48",
+# "N77Ru61",
+# "N77Ru62",
+# "N77Ru63",
+# "N77Ru64",
+# "N77Ru65",
+# "N77Ru66",
+# "N77Ru67",
+# "N77Ru68",
+# "N77Ru69",
+# "N77Ru70",
+# "N77Ru71",
+# "N77Ru72",
+# "N73N77",
+# ]
