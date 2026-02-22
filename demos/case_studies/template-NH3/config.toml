@@ -1,0 +1,114 @@
+driver = "lammps"
+
+[simulation]
+mlip = "mace"
+model = "MACE-matpes-pbe-omat-ft.model-lammps.pt" # "mace-mp-0b3-medium.model-lammps.pt"
+system = "NH3-v1-v2"
+systems_folder = "../systems"
+model_folder = "../models"
+n_gpus = 1
+atom_list = ["Ru", "N", "H"]
+temperature = 500.0
+restart_file = "tmp.restart"
+frozen_layers = "1:12 25:36 49:60"
+config_folder = "../simulation"
+
+[loxodynamics]
+kappa = 200
+max_iter = 0
+batch_size = 100
+
+[loxodynamics.skewencoder]
+hidden_layers = [150, 80, 40, 10, 5]
+threshold = 0.3
+
+[plumed]
+log_file = "plumed.log"
+stride = 10
+env_bias = """
+WHOLEMOLECULES ENTITY0=13-24,37-48,61-72
+com_Ru: COM ATOMS=13-24,37-48,61-72
+dist73: DISTANCE ATOMS=73,com_Ru COMPONENTS
+dist77: DISTANCE ATOMS=77,com_Ru COMPONENTS
+abs_d73_z: MATHEVAL ARG=dist73.z FUNC=abs(x) PERIODIC=NO
+abs_d77_z: MATHEVAL ARG=dist77.z FUNC=abs(x) PERIODIC=NO
+uwall1: UPPER_WALLS ARG=abs_d73_z AT=6.0 KAPPA=150.0 EXP=2
+uwall2: UPPER_WALLS ARG=abs_d77_z AT=6.0 KAPPA=150.0 EXP=2
+"""
+cv_type = "DISTANCE"
+pbc = true
+descriptors = [
+"N73Ru13",
+"N73Ru14",
+"N73Ru15",
+"N73Ru16",
+"N73Ru17",
+"N73Ru18",
+"N73Ru19",
+"N73Ru20",
+"N73Ru21",
+"N73Ru22",
+"N73Ru23",
+"N73Ru24",
+"N73Ru37",
+"N73Ru38",
+"N73Ru39",
+"N73Ru40",
+"N73Ru41",
+"N73Ru42",
+"N73Ru43",
+"N73Ru44",
+"N73Ru45",
+"N73Ru46",
+"N73Ru47",
+"N73Ru48",
+"N73Ru61",
+"N73Ru62",
+"N73Ru63",
+"N73Ru64",
+"N73Ru65",
+"N73Ru66",
+"N73Ru67",
+"N73Ru68",
+"N73Ru69",
+"N73Ru70",
+"N73Ru71",
+"N73Ru72",
+"N77Ru13",
+"N77Ru14",
+"N77Ru15",
+"N77Ru16",
+"N77Ru17",
+"N77Ru18",
+"N77Ru19",
+"N77Ru20",
+"N77Ru21",
+"N77Ru22",
+"N77Ru23",
+"N77Ru24",
+"N77Ru37",
+"N77Ru38",
+"N77Ru39",
+"N77Ru40",
+"N77Ru41",
+"N77Ru42",
+"N77Ru43",
+"N77Ru44",
+"N77Ru45",
+"N77Ru46",
+"N77Ru47",
+"N77Ru48",
+"N77Ru61",
+"N77Ru62",
+"N77Ru63",
+"N77Ru64",
+"N77Ru65",
+"N77Ru66",
+"N77Ru67",
+"N77Ru68",
+"N77Ru69",
+"N77Ru70",
+"N77Ru71",
+"N77Ru72",
+"N73N77",
+]
