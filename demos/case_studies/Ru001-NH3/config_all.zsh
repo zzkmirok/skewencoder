@@ -147,9 +147,9 @@ for kappa in ${myarray[@]}; do
         cd "${SCRIPT_PATH}/${JOB_NAME}"
         sed -i "/#SBATCH/s/\(--job-name=\).*/\1$JOB_NAME/" runsbatch.sh
         sed -i "/#SBATCH/s/\(--output=\).*/\1${JOB_NAME}.\%J.txt/" runsbatch.sh
-        sed -i "/\[loxodynamics\]/,/\[.*\]/ s/^\(kappa[[:space:]]*=[[:space:]]*\).*/\1${kappa}/" config.toml
-        sed -i "/\[loxodynamics\]/,/\[.*\]/ s/^\(max_iter[[:space:]]*=[[:space:]]*\).*/\1${MAXITER}/" config.toml
-        sed -i "/\[simulation\]/,/\[.*\]/ s/^\(seed[[:space:]]*=[[:space:]]*\).*/\1${SEED}/" config.toml
+        sed -i "/^\[loxodynamics\]/,/^\[.*\]/ s/^\(kappa[[:space:]]*=[[:space:]]*\).*/\1${kappa}/" config.toml
+        sed -i "/^\[loxodynamics\]/,/^\[.*\]/ s/^\(max_iter[[:space:]]*=[[:space:]]*\).*/\1${MAXITER}/" config.toml
+        sed -i "/^\[simulation\]/,/^\[.*\]/ s/^\(seed[[:space:]]*=[[:space:]]*\).*/\1${SEED}/" config.toml
         cd $SCRIPT_PATH
     done
 done
