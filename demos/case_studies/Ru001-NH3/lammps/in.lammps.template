@@ -1,0 +1,41 @@
+log lammps.log
+package kokkos newton on neigh half
+units metal
+boundary p p f
+
+# create the simulation system without reading external data file
+atom_style atomic/kk
+atom_modify     map yes
+neigh_modify    delay 10 every 1
+read_restart  <RESTART_FILE>
+
+pair_style      <MLIP> no_domain_decomposition
+pair_coeff      * * <MODEL_FILE> <ATOM_LIST>
+
+group frozen_atoms id <FROZEN_LAYERS> # figure out how many layers
+group mobile subtract all frozen_atoms
+
+velocity all create <TEMPERATURE> <SEED> mom yes rot yes dist gaussian
+
+fix freeze_force frozen_atoms setforce 0.0 0.0 0.0
+
+velocity frozen_atoms set 0.0 0.0 0.0
+
+compute m_temp mobile temp
+thermo_modify temp m_temp
+dump myDump all custom 10 all.lammpstrj id type x y z vx vy vz fx fy fz
+dump_modify myDump append yes
+fix p1 all plumed plumedfile plumed.dat outfile <PLUMED_LOG>
+# simulation settings
+timestep 0.0005 # 0.5fs timestep
+# fix 1 all npt temp 243 243 $(100 * dt) iso 0 0 $(1000 * dt) drag 1.0
+fix             1 mobile nvt temp <TEMPERATURE> <TEMPERATURE> 0.05
+fix_modify      1 temp m_temp
+# output setup
+thermo_style custom step c_m_temp temp epair press density
+thermo 100
+
+restart 5000 <RESTART_FILE>
+run 5000
+
+undump myDump

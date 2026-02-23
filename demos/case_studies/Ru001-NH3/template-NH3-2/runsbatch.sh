@@ -23,4 +23,4 @@ cd $SCRIPT_PATH
 source $WORK/RH9PYENV/PLUMED-GPU/bin/activate 
 
 LMP_EXE="/home/rwth1997/lammps-custom-mace/bin/lmp"
-python RuNH3Demo.py
+python RuNH3Demo.py -custom

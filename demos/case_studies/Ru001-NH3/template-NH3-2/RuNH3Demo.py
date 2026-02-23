@@ -62,6 +62,7 @@ REPLACE_DICT = {
     "<ATOM_LIST>": " ".join(CONFIG["simulation"]["atom_list"]),
     "<PLUMED_LOG>": CONFIG["plumed"].get("log_file", "plumed.log"),
     "<TEMPERATURE>": f"{CONFIG['simulation']['temperature']:.2f}",
+    "<SEED>": f"{CONFIG['simulation']['seed']}",
     "<RESTART_FILE>": CONFIG["simulation"]["restart_file"],
     "<FROZEN_LAYERS>": CONFIG["simulation"]["frozen_layers"],
 }
