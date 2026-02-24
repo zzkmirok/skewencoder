@@ -24,7 +24,7 @@ velocity frozen_atoms set 0.0 0.0 0.0
 compute m_temp mobile temp
 thermo_modify temp m_temp
 dump myDump all custom 10 all.lammpstrj id type x y z vx vy vz fx fy fz
-dump_modify myDump append yes
+dump_modify myDump append yes first no
 fix p1 all plumed plumedfile plumed.dat outfile <PLUMED_LOG>
 # simulation settings
 timestep 0.0005 # 0.5fs timestep

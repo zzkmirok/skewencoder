@@ -87,6 +87,9 @@ ENV_BIAS_LIST = CONFIG["plumed"].get("env_bias_cv", [])
 CUSTOM_DESCRIPTOR_LIST = CONFIG["plumed"].get("custom_descriptors", [])
 CV_TYPE = CONFIG["plumed"]["cv_type"]
 
+set_DISCRIPTOR_LIST = set(DESCRIPTOR_LIST)
+REFINED_CUSTOM_DESCRIPTOR_LIST = [item for item in CUSTOM_DESCRIPTOR_LIST if item not in set_DISCRIPTOR_LIST]
+
 SKEWENCODER_INPUT_LIST = DESCRIPTOR_LIST
 if ARGS.custom:
     SKEWENCODER_INPUT_LIST = CUSTOM_DESCRIPTOR_LIST
@@ -94,7 +97,6 @@ elif ARGS.all:
     SKEWENCODER_INPUT_LIST = [*DESCRIPTOR_LIST, *CUSTOM_DESCRIPTOR_LIST]
 else:
     pass
-
 
 def descriptor_script():
     no_pbc = "" if CONFIG["plumed"]["pbc"] else "NOPBC"
@@ -215,7 +217,7 @@ UNITS LENGTH=A TIME=0.001  #Amstroeng, hartree, fs
 {custom_cv_script()}
 {additional_biases()}
 # PRINT all variables
-PRINT FMT=%g STRIDE={CONFIG["plumed"]["stride"]} FILE={simulation_folder}/COLVAR ARG={",".join(ENV_BIAS_LIST) if len(ENV_BIAS_LIST) > 0 else ""}{"," if len(ENV_BIAS_LIST) > 0 else ""}{",".join(DESCRIPTOR_LIST) if len(DESCRIPTOR_LIST) > 0 else ""}{"," if len(DESCRIPTOR_LIST) > 0 else ""}{",".join(CUSTOM_DESCRIPTOR_LIST) if len(CUSTOM_DESCRIPTOR_LIST) > 0 else ""}
+PRINT FMT=%g STRIDE={CONFIG["plumed"]["stride"]} FILE={simulation_folder}/COLVAR ARG={",".join(ENV_BIAS_LIST) if len(ENV_BIAS_LIST) > 0 else ""}{"," if len(ENV_BIAS_LIST) > 0 else ""}{",".join(DESCRIPTOR_LIST) if len(DESCRIPTOR_LIST) > 0 else ""}{"," if len(DESCRIPTOR_LIST) > 0 else ""}{",".join(REFINED_CUSTOM_DESCRIPTOR_LIST) if len(REFINED_CUSTOM_DESCRIPTOR_LIST) > 0 else ""}
 """
     print(input, file=file)
     file.close()
@@ -247,7 +249,7 @@ cv: PYTORCH_MODEL FILE={model_name} ARG={",".join(SKEWENCODER_INPUT_LIST)}
             f"""
 # Energy wall for aes cv
 wall: {walltype} ARG=cv.node-0 AT={pos + offset} KAPPA={kappa} ExP=2 EPS=1 OFFSET=0.0
-PRINT FMT=%g STRIDE={CONFIG["plumed"]["stride"]} FILE={simulation_folder}/COLVAR ARG={",".join(ENV_BIAS_LIST) if len(ENV_BIAS_LIST) > 0 else ""}{"," if len(ENV_BIAS_LIST) > 0 else ""}{",".join(DESCRIPTOR_LIST) if len(DESCRIPTOR_LIST) > 0 else ""}{"," if len(DESCRIPTOR_LIST) > 0 else ""}{",".join(CUSTOM_DESCRIPTOR_LIST) if len(CUSTOM_DESCRIPTOR_LIST) > 0 else ""},cv.*""",
+PRINT FMT=%g STRIDE={CONFIG["plumed"]["stride"]} FILE={simulation_folder}/COLVAR ARG={",".join(ENV_BIAS_LIST) if len(ENV_BIAS_LIST) > 0 else ""}{"," if len(ENV_BIAS_LIST) > 0 else ""}{",".join(DESCRIPTOR_LIST) if len(DESCRIPTOR_LIST) > 0 else ""}{"," if len(DESCRIPTOR_LIST) > 0 else ""}{",".join(REFINED_CUSTOM_DESCRIPTOR_LIST) if len(REFINED_CUSTOM_DESCRIPTOR_LIST) > 0 else ""},cv.*""",
             file=f,
         )
 
@@ -376,7 +378,7 @@ def main(kappa):
         state_detection = STADECT.State_detection(
             (threshold, 1 - threshold),
             bond_type_dict=bond_type_dict,
-            n_heavy_atom_pairs=n_descriptors,
+            n_heavy_atom_pairs=len(DESCRIPTOR_LIST),
             pattern=detector_regex,
         )
         input_pattern = CONFIG["plumed"].get(
