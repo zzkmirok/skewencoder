@@ -301,7 +301,7 @@ def main(kappa):
     plumed_log = CONFIG["plumed"]["log_file"]
 
     n_gpus = CONFIG["simulation"]["n_gpus"]
-    if CONFIG["driver"] == "lammps":
+    if "lammps" in CONFIG["driver"]:
         files_cleaned_pattern = "bck* *.dmp *log* *restart* *.lammpstrj"
         driver_exec = EXEC_DICT[f"{CONFIG['simulation']['mlip']}"]
     job_exec = driver_exec
@@ -473,7 +473,7 @@ if __name__ == "__main__":
             f.write(gen_input_lmp_template(lmp_file="in.lammps"))
     COMM.Barrier()
     main(kappa)
-    if CONFIG["driver"] == "lammps":
+    if "lammps" in CONFIG["driver"]:
         files_deleted = "tmp* bck*"
         if RANK == 0:
             subprocess.run([*bash_prefix, f"rm -f {files_deleted}"], cwd=SCRIPT_DIR)
