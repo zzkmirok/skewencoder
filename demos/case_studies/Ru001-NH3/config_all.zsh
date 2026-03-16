@@ -37,7 +37,7 @@ function Display_help {
             -s | --source= [your targeted template]
             -t | --target= [target folder prefix]
             -m | --maxiter= [max number of iter, default 20]
-            -k | --kappa= [the name of venv for installing CTY]
+            -k | --kappa= [ranges for kappas]
 EON
 }
 
