@@ -3,6 +3,12 @@ package kokkos newton on neigh half
 units metal
 boundary p p f
 
+variable bohr2ang equal 0.52917721
+variable d3_cutoff_bohr equal 20.0
+variable cn_cutoff_bohr equal 20.0
+variable d3_cutoff_ang equal ${d3_cutoff_bohr}*${bohr2ang}
+variable cn_cutoff_ang equal ${cn_cutoff_bohr}*${bohr2ang}
+
 # create the simulation system without reading external data file
 atom_style atomic/kk
 atom_modify     map yes
@@ -10,8 +16,9 @@ neigh_modify    delay 10 every 1
 #read_restart    restart
 read_data        <SYSTEM_FILE>
 
-pair_style      <MLIP> no_domain_decomposition
-pair_coeff      * * <MODEL_FILE> <ATOM_LIST>
+pair_style      hybrid/overlay <MLIP> no_domain_decomposition dispersion/d3 bj pbe ${d3_cutoff_ang} ${cn_cutoff_ang}
+pair_coeff      * * <MLIP> <MODEL_FILE> <ATOM_LIST>
+pair_coeff      * * dispersion/d3 <ATOM_LIST>
 
 group frozen_atoms id <FROZEN_LAYERS> # figure out how many layers
 group mobile subtract all frozen_atoms

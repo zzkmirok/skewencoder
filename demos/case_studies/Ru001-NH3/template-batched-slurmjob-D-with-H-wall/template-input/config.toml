@@ -1,0 +1,246 @@
+driver = "lammps"
+
+[simulation]
+mlip = "mace"
+model = "mace-mh-1-oc20_usemppbe.model-lammps.pt" # "mace-mp-0b3-medium.model-lammps.pt"
+system = "SURFACE_2NH3_relax_mh_1"
+systems_folder = "../../systems"
+model_folder = "../../models"
+n_gpus = 1
+n_cpus_per_lammps_task = 1
+atom_list = ["Ru", "N", "H"]
+temperature = 500.0
+restart_file = "tmp.restart"
+frozen_layers = "1:12 25:36 49:60"
+config_folder = "../../simulation"
+seed = 42
+
+[loxodynamics]
+kappa = 300
+max_iter = 1
+batch_size = 100
+warm_start = false
+state_detection = false
+
+[loxodynamics.skewencoder]
+hidden_layers = [50, 30, 20, 10, 5]
+threshold = 0.3
+
+[plumed]
+log_file = "plumed.log"
+stride = 10
+env_bias = """
+WHOLEMOLECULES ENTITY0=13-24 ENTITY1=37-48 ENTITY2=61-72
+com_Ru: CENTER ATOMS=13-24,37-48,61-72
+com_b5_1: CENTER ATOMS=71,68,70,44,47
+com_b5_2: CENTER ATOMS=47,44,46,20,23
+com_b5_3: CENTER ATOMS=23,20,22,68,71
+
+dist73: DISTANCE ATOMS=73,com_Ru COMPONENTS
+dist77: DISTANCE ATOMS=77,com_Ru COMPONENTS
+
+dist74: DISTANCE ATOMS=74,com_Ru COMPONENTS
+dist75: DISTANCE ATOMS=75,com_Ru COMPONENTS
+dist76: DISTANCE ATOMS=76,com_Ru COMPONENTS
+dist78: DISTANCE ATOMS=78,com_Ru COMPONENTS
+dist79: DISTANCE ATOMS=79,com_Ru COMPONENTS
+dist80: DISTANCE ATOMS=80,com_Ru COMPONENTS
+
+dist74_b5_1: DISTANCE ATOMS=74,com_b5_1 COMPONENTS
+dist75_b5_1: DISTANCE ATOMS=75,com_b5_1 COMPONENTS
+dist76_b5_1: DISTANCE ATOMS=76,com_b5_1 COMPONENTS
+dist78_b5_1: DISTANCE ATOMS=78,com_b5_1 COMPONENTS
+dist79_b5_1: DISTANCE ATOMS=79,com_b5_1 COMPONENTS
+dist80_b5_1: DISTANCE ATOMS=80,com_b5_1 COMPONENTS
+
+dist74_b5_2: DISTANCE ATOMS=74,com_b5_2 COMPONENTS
+dist75_b5_2: DISTANCE ATOMS=75,com_b5_2 COMPONENTS
+dist76_b5_2: DISTANCE ATOMS=76,com_b5_2 COMPONENTS
+dist78_b5_2: DISTANCE ATOMS=78,com_b5_2 COMPONENTS
+dist79_b5_2: DISTANCE ATOMS=79,com_b5_2 COMPONENTS
+dist80_b5_2: DISTANCE ATOMS=80,com_b5_2 COMPONENTS
+
+dist74_b5_3: DISTANCE ATOMS=74,com_b5_3 COMPONENTS
+dist75_b5_3: DISTANCE ATOMS=75,com_b5_3 COMPONENTS
+dist76_b5_3: DISTANCE ATOMS=76,com_b5_3 COMPONENTS
+dist78_b5_3: DISTANCE ATOMS=78,com_b5_3 COMPONENTS
+dist79_b5_3: DISTANCE ATOMS=79,com_b5_3 COMPONENTS
+dist80_b5_3: DISTANCE ATOMS=80,com_b5_3 COMPONENTS
+
+abs_d73_z: MATHEVAL ARG=dist73.z FUNC=abs(x) PERIODIC=NO
+abs_d77_z: MATHEVAL ARG=dist77.z FUNC=abs(x) PERIODIC=NO
+
+abs_d74_z: MATHEVAL ARG=dist74.z FUNC=abs(x) PERIODIC=NO
+abs_d75_z: MATHEVAL ARG=dist75.z FUNC=abs(x) PERIODIC=NO
+abs_d76_z: MATHEVAL ARG=dist76.z FUNC=abs(x) PERIODIC=NO
+abs_d78_z: MATHEVAL ARG=dist78.z FUNC=abs(x) PERIODIC=NO
+abs_d79_z: MATHEVAL ARG=dist79.z FUNC=abs(x) PERIODIC=NO
+abs_d80_z: MATHEVAL ARG=dist80.z FUNC=abs(x) PERIODIC=NO
+
+abs_dist74_b5_1_z: MATHEVAL ARG=dist74_b5_1.z FUNC=abs(x) PERIODIC=NO
+abs_dist75_b5_1_z: MATHEVAL ARG=dist75_b5_1.z FUNC=abs(x) PERIODIC=NO
+abs_dist76_b5_1_z: MATHEVAL ARG=dist76_b5_1.z FUNC=abs(x) PERIODIC=NO
+abs_dist78_b5_1_z: MATHEVAL ARG=dist78_b5_1.z FUNC=abs(x) PERIODIC=NO
+abs_dist79_b5_1_z: MATHEVAL ARG=dist79_b5_1.z FUNC=abs(x) PERIODIC=NO
+abs_dist80_b5_1_z: MATHEVAL ARG=dist80_b5_1.z FUNC=abs(x) PERIODIC=NO
+
+abs_dist74_b5_2_z: MATHEVAL ARG=dist74_b5_2.z FUNC=abs(x) PERIODIC=NO
+abs_dist75_b5_2_z: MATHEVAL ARG=dist75_b5_2.z FUNC=abs(x) PERIODIC=NO
+abs_dist76_b5_2_z: MATHEVAL ARG=dist76_b5_2.z FUNC=abs(x) PERIODIC=NO
+abs_dist78_b5_2_z: MATHEVAL ARG=dist78_b5_2.z FUNC=abs(x) PERIODIC=NO
+abs_dist79_b5_2_z: MATHEVAL ARG=dist79_b5_2.z FUNC=abs(x) PERIODIC=NO
+abs_dist80_b5_2_z: MATHEVAL ARG=dist80_b5_2.z FUNC=abs(x) PERIODIC=NO
+
+abs_dist74_b5_3_z: MATHEVAL ARG=dist74_b5_3.z FUNC=abs(x) PERIODIC=NO
+abs_dist75_b5_3_z: MATHEVAL ARG=dist75_b5_3.z FUNC=abs(x) PERIODIC=NO
+abs_dist76_b5_3_z: MATHEVAL ARG=dist76_b5_3.z FUNC=abs(x) PERIODIC=NO
+abs_dist78_b5_3_z: MATHEVAL ARG=dist78_b5_3.z FUNC=abs(x) PERIODIC=NO
+abs_dist79_b5_3_z: MATHEVAL ARG=dist79_b5_3.z FUNC=abs(x) PERIODIC=NO
+abs_dist80_b5_3_z: MATHEVAL ARG=dist80_b5_3.z FUNC=abs(x) PERIODIC=NO
+
+uwall73: UPPER_WALLS ARG=abs_d73_z AT=20.0 KAPPA=150.0 EXP=2
+uwall77: UPPER_WALLS ARG=abs_d77_z AT=20.0 KAPPA=150.0 EXP=2
+
+uwall74: UPPER_WALLS ARG=abs_d74_z AT=20.0 KAPPA=150.0 EXP=2
+uwall75: UPPER_WALLS ARG=abs_d75_z AT=20.0 KAPPA=150.0 EXP=2
+uwall76: UPPER_WALLS ARG=abs_d76_z AT=20.0 KAPPA=150.0 EXP=2
+uwall78: UPPER_WALLS ARG=abs_d78_z AT=20.0 KAPPA=150.0 EXP=2
+uwall79: UPPER_WALLS ARG=abs_d79_z AT=20.0 KAPPA=150.0 EXP=2
+uwall80: UPPER_WALLS ARG=abs_d80_z AT=20.0 KAPPA=150.0 EXP=2
+
+lwall74_b5_1: LOWER_WALLS ARG=abs_dist74_b5_1_z AT=2.0 KAPPA=100.0 EXP=2
+lwall75_b5_1: LOWER_WALLS ARG=abs_dist75_b5_1_z AT=2.0 KAPPA=100.0 EXP=2
+lwall76_b5_1: LOWER_WALLS ARG=abs_dist76_b5_1_z AT=2.0 KAPPA=100.0 EXP=2
+lwall78_b5_1: LOWER_WALLS ARG=abs_dist78_b5_1_z AT=2.0 KAPPA=100.0 EXP=2
+lwall79_b5_1: LOWER_WALLS ARG=abs_dist79_b5_1_z AT=2.0 KAPPA=100.0 EXP=2
+lwall80_b5_1: LOWER_WALLS ARG=abs_dist80_b5_1_z AT=2.0 KAPPA=100.0 EXP=2
+
+lwall74_b5_2: LOWER_WALLS ARG=abs_dist74_b5_2_z AT=2.0 KAPPA=100.0 EXP=2
+lwall75_b5_2: LOWER_WALLS ARG=abs_dist75_b5_2_z AT=2.0 KAPPA=100.0 EXP=2
+lwall76_b5_2: LOWER_WALLS ARG=abs_dist76_b5_2_z AT=2.0 KAPPA=100.0 EXP=2
+lwall78_b5_2: LOWER_WALLS ARG=abs_dist78_b5_2_z AT=2.0 KAPPA=100.0 EXP=2
+lwall79_b5_2: LOWER_WALLS ARG=abs_dist79_b5_2_z AT=2.0 KAPPA=100.0 EXP=2
+lwall80_b5_2: LOWER_WALLS ARG=abs_dist80_b5_2_z AT=2.0 KAPPA=100.0 EXP=2
+
+lwall74_b5_3: LOWER_WALLS ARG=abs_dist74_b5_3_z AT=2.0 KAPPA=100.0 EXP=2
+lwall75_b5_3: LOWER_WALLS ARG=abs_dist75_b5_3_z AT=2.0 KAPPA=100.0 EXP=2
+lwall76_b5_3: LOWER_WALLS ARG=abs_dist76_b5_3_z AT=2.0 KAPPA=100.0 EXP=2
+lwall78_b5_3: LOWER_WALLS ARG=abs_dist78_b5_3_z AT=2.0 KAPPA=100.0 EXP=2
+lwall79_b5_3: LOWER_WALLS ARG=abs_dist79_b5_3_z AT=2.0 KAPPA=100.0 EXP=2
+lwall80_b5_3: LOWER_WALLS ARG=abs_dist80_b5_3_z AT=2.0 KAPPA=100.0 EXP=2
+"""
+env_bias_cv = [
+    "uwall73.bias",
+    "uwall77.bias",
+    "uwall74.bias",
+    "uwall75.bias",
+    "uwall76.bias",
+    "uwall78.bias",
+    "uwall79.bias",
+    "uwall80.bias",
+]
+
+cv_type = "DISTANCE"
+pbc = true
+descriptors = [
+   "H74N73",
+    "H75N73",
+    "H76N73",
+    "H78N73",
+    "H79N73",
+    "H80N73",
+    "H74N77",
+    "H75N77",
+    "H76N77",
+    "H78N77",
+    "H79N77",
+    "H80N77",
+    "N73N77",
+    "H74H75",
+    "H74H76",
+    "H75H76",
+    "H74H78",
+    "H74H79",
+    "H74H80",
+    "H75H78",
+    "H75H79",
+    "H75H80",
+    "H76H78",
+    "H76H79",
+    "H76H80",
+    "N73Ru13",
+    "N73Ru14",
+    "N73Ru15",
+    "N73Ru16",
+    "N73Ru17",
+    "N73Ru18",
+    "N73Ru19",
+    "N73Ru20",
+    "N73Ru21",
+    "N73Ru22",
+    "N73Ru23",
+    "N73Ru24",
+    "N73Ru37",
+    "N73Ru38",
+    "N73Ru39",
+    "N73Ru40",
+    "N73Ru41",
+    "N73Ru42",
+    "N73Ru43",
+    "N73Ru44",
+    "N73Ru45",
+    "N73Ru46",
+    "N73Ru47",
+    "N73Ru48",
+    "N73Ru61",
+    "N73Ru62",
+    "N73Ru63",
+    "N73Ru64",
+    "N73Ru65",
+    "N73Ru66",
+    "N73Ru67",
+    "N73Ru68",
+    "N73Ru69",
+    "N73Ru70",
+    "N73Ru71",
+    "N73Ru72",
+    "N77Ru13",
+    "N77Ru14",
+    "N77Ru15",
+    "N77Ru16",
+    "N77Ru17",
+    "N77Ru18",
+    "N77Ru19",
+    "N77Ru20",
+    "N77Ru21",
+    "N77Ru22",
+    "N77Ru23",
+    "N77Ru24",
+    "N77Ru37",
+    "N77Ru38",
+    "N77Ru39",
+    "N77Ru40",
+    "N77Ru41",
+    "N77Ru42",
+    "N77Ru43",
+    "N77Ru44",
+    "N77Ru45",
+    "N77Ru46",
+    "N77Ru47",
+    "N77Ru48",
+    "N77Ru61",
+    "N77Ru62",
+    "N77Ru63",
+    "N77Ru64",
+    "N77Ru65",
+    "N77Ru66",
+    "N77Ru67",
+    "N77Ru68",
+    "N77Ru69",
+    "N77Ru70",
+    "N77Ru71",
+    "N77Ru72",
+]
+# input_regex = '^(([A-Za-z]+)\d+([A-Za-z]+)\d+_z|N\d+N\d+)$'
+input_regex = '^^([A-Za-z]+)\d+([A-Za-z]+)\d+$.*$'
+detector_regex = '^([A-Za-z]+)\d+([A-Za-z]+)\d+$'

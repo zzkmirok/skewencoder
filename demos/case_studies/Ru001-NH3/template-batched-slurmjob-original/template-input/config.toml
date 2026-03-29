@@ -1,0 +1,139 @@
+driver = "lammps"
+
+[simulation]
+mlip = "mace"
+model = "mace-mh-1-oc20_usemppbe.model-lammps.pt" # "mace-mp-0b3-medium.model-lammps.pt"
+system = "Free_N2_3H2_thermalized"
+systems_folder = "../../systems"
+model_folder = "../../models"
+n_gpus = 1
+n_cpus_per_lammps_task = 1
+atom_list = ["Ru", "N", "H"]
+temperature = 500.0
+restart_file = "tmp.restart"
+frozen_layers = "1:12 25:36 49:60"
+config_folder = "../../simulation"
+seed = 42
+
+[loxodynamics]
+kappa = 300
+max_iter = 1
+batch_size = 100
+warm_start = false
+state_detection = false
+
+[loxodynamics.skewencoder]
+hidden_layers = [50, 30, 20, 10, 5]
+threshold = 0.3
+
+[plumed]
+log_file = "plumed.log"
+stride = 10
+env_bias = """
+com_Ru: CENTER ATOMS=13-24,37-48,61-72
+dist73: DISTANCE ATOMS=73,com_Ru COMPONENTS
+dist77: DISTANCE ATOMS=77,com_Ru COMPONENTS
+
+dist74: DISTANCE ATOMS=74,com_Ru COMPONENTS
+dist75: DISTANCE ATOMS=75,com_Ru COMPONENTS
+dist76: DISTANCE ATOMS=76,com_Ru COMPONENTS
+dist78: DISTANCE ATOMS=78,com_Ru COMPONENTS
+dist79: DISTANCE ATOMS=79,com_Ru COMPONENTS
+dist80: DISTANCE ATOMS=80,com_Ru COMPONENTS
+
+abs_d73_z: MATHEVAL ARG=dist73.z FUNC=abs(x) PERIODIC=NO
+abs_d77_z: MATHEVAL ARG=dist77.z FUNC=abs(x) PERIODIC=NO
+
+abs_d74_z: MATHEVAL ARG=dist74.z FUNC=abs(x) PERIODIC=NO
+abs_d75_z: MATHEVAL ARG=dist75.z FUNC=abs(x) PERIODIC=NO
+abs_d76_z: MATHEVAL ARG=dist76.z FUNC=abs(x) PERIODIC=NO
+abs_d78_z: MATHEVAL ARG=dist78.z FUNC=abs(x) PERIODIC=NO
+abs_d79_z: MATHEVAL ARG=dist79.z FUNC=abs(x) PERIODIC=NO
+abs_d80_z: MATHEVAL ARG=dist80.z FUNC=abs(x) PERIODIC=NO
+
+uwall73: UPPER_WALLS ARG=abs_d73_z AT=20.0 KAPPA=150.0 EXP=2
+uwall77: UPPER_WALLS ARG=abs_d77_z AT=20.0 KAPPA=150.0 EXP=2
+
+uwall74: UPPER_WALLS ARG=abs_d74_z AT=20.0 KAPPA=150.0 EXP=2
+uwall75: UPPER_WALLS ARG=abs_d75_z AT=20.0 KAPPA=150.0 EXP=2
+uwall76: UPPER_WALLS ARG=abs_d76_z AT=20.0 KAPPA=150.0 EXP=2
+uwall78: UPPER_WALLS ARG=abs_d78_z AT=20.0 KAPPA=150.0 EXP=2
+uwall79: UPPER_WALLS ARG=abs_d79_z AT=20.0 KAPPA=150.0 EXP=2
+uwall80: UPPER_WALLS ARG=abs_d80_z AT=20.0 KAPPA=150.0 EXP=2
+"""
+env_bias_cv = [
+    "uwall73.bias",
+    "uwall77.bias",
+    "uwall74.bias",
+    "uwall75.bias",
+    "uwall76.bias",
+    "uwall78.bias",
+    "uwall79.bias",
+    "uwall80.bias",
+]
+
+cv_type = "DISTANCE"
+pbc = true
+descriptors = [
+    "H74N73",
+    "H75N73",
+    "H76N73",
+    "H78N73",
+    "H79N73",
+    "H80N73",
+    "H74N77",
+    "H75N77",
+    "H76N77",
+    "H78N77",
+    "H79N77",
+    "H80N77",
+    "N73N77",
+    "H74H75",
+    "H74H76",
+    "H75H76",
+    "H74H78",
+    "H74H79",
+    "H74H80",
+    "H75H78",
+    "H75H79",
+    "H75H80",
+    "H76H78",
+    "H76H79",
+    "H76H80",
+]
+custom_cv_definition = """
+WHOLEMOLECULES ENTITY0=13-24 ENTITY1=37-48 ENTITY2=61-72
+Layer1: CENTER ATOMS=13-24
+Layer2: CENTER ATOMS=37-48
+Layer3: CENTER ATOMS=61-72
+group_N: GROUP ATOMS=73,77
+group_H: GROUP ATOMS=74-76,78-80
+group_Ru_1: GROUP ATOMS=13-24
+group_Ru_2: GROUP ATOMS=37-48
+group_Ru_3: GROUP ATOMS=61-72
+
+cn_N_N:    COORDINATION GROUPA=group_N R_0=1.45
+cn_H_H:    COORDINATION GROUPA=group_H R_0=0.75
+cn_N_H:    COORDINATION GROUPA=group_N GROUPB=group_H R_0=1.02
+cn_N_Ru_1: COORDINATION GROUPA=group_N GROUPB=group_Ru_1 R_0=2.2
+cn_N_Ru_2: COORDINATION GROUPA=group_N GROUPB=group_Ru_2 R_0=2.2
+cn_N_Ru_3: COORDINATION GROUPA=group_N GROUPB=group_Ru_3 R_0=2.2
+cn_H_Ru_1: COORDINATION GROUPA=group_H GROUPB=group_Ru_1 R_0=1.9
+cn_H_Ru_2: COORDINATION GROUPA=group_H GROUPB=group_Ru_2 R_0=1.9
+cn_H_Ru_3: COORDINATION GROUPA=group_H GROUPB=group_Ru_3 R_0=1.9
+"""
+custom_descriptors = [
+"cn_N_N",  
+"cn_H_H",  
+"cn_N_H",  
+"cn_N_Ru_1",
+"cn_N_Ru_2",
+"cn_N_Ru_3",
+"cn_H_Ru_1",
+"cn_H_Ru_2",
+"cn_H_Ru_3",
+]
+
+# input_regex = '^(([A-Za-z]+)\d+([A-Za-z]+)\d+_z|N\d+N\d+)$'
+input_regex = '^cn_.*$'
+detector_regex = '^([A-Za-z]+)\d+([A-Za-z]+)\d+$'
