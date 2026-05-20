@@ -8,6 +8,7 @@ import os
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_DIR = os.path.join(os.path.dirname(SCRIPT_DIR), "test")
 # print(SCRIPT_DIR)
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
@@ -108,7 +109,7 @@ def transform_colvar_key(
 
 
 def parse_unbiased_colvar(
-    colvar_file: str = f"{SCRIPT_DIR}/COLVAR",
+    colvar_file: str = f"{TEST_DIR}/COLVAR",
     prop: int = 1,
     std_tol: float = 0.05,
     r0_tol: float = 1.6,
@@ -299,7 +300,7 @@ def test_State_detection():
         else:
             x[:, 3:4] = value(x[:, 3:4])
 
-    print(test_state_detection(f"{SCRIPT_DIR}/COLVAR"))
+    print(test_state_detection(f"{TEST_DIR}/COLVAR"))
     print(test_state_detection.states)
     print(test_state_detection.states_connectivity)
     print(test_state_detection.current_state)
