@@ -4,7 +4,8 @@ __all__ = ["state_detection",
            "skewloss",
            "model_skewencoder",
            "gen_plumed",
-           "plumedkits"]
+           "plumedkits",
+           "gen_ASE"]
 
 from .io import *
 from .switchfunction import *
@@ -13,3 +14,8 @@ from .model_skewencoder import *
 from .skewloss import *
 from .plumedkits import *
 from .gen_plumed import *
+
+try:
+    from .gen_ASE import *
+except ImportError:
+    pass

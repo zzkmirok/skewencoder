@@ -24,7 +24,7 @@ import networkx as nx
 
 import itertools
 
-__all__ = ["GeometryParser","load_dataframe", "plumed_to_pandas", "create_dataset_from_files", "load_data"]
+__all__ = ["GeometryParser","load_dataframe", "plumed_to_pandas", "create_dataset_from_files", "load_data", "create_dataset_from_descriptors"]
 
 
 def is_plumed_file(filename):
@@ -283,6 +283,71 @@ def load_data(filenames_iter,filenames_all, multiple = 0, bs=0, pattern = r"^([A
         batch_size_list=[[bs * multiple, bs],[bs * multiple, bs]]
     datamodule = DictModule(dataset=[AE_dataset, skewness_dataset], batch_size=batch_size_list)
     return AE_dataset, skewness_dataset, datamodule, AE_df, skewness_df
+
+
+def create_dataset_from_descriptors(
+    descriptors: np.ndarray,
+    feature_names: list = None,
+    batch_size: int = 0,
+    verbose: bool = True,
+):
+    """Create a DictDataset and DictModule from a numpy array of descriptors.
+
+    Converts in-memory descriptor arrays (e.g., from MACE) into the
+    DictDataset/DictModule format consumed by skewencoder training functions.
+
+    Parameters
+    ----------
+    descriptors : np.ndarray
+        2D array of shape (n_samples, n_features). Each row is one sample's
+        descriptor vector.
+    feature_names : list[str], optional
+        Names for each feature dimension. If None, auto-generated as
+        ["desc_0", "desc_1", ...].
+    batch_size : int, optional
+        Batch size for the DataLoader. 0 means full-batch (all samples in one
+        batch).
+    verbose : bool, optional
+        If True, print dataset shape info.
+
+    Returns
+    -------
+    dataset : DictDataset
+        Dataset with key "data" containing the descriptor tensor of shape
+        (n_samples, n_features).
+    datamodule : DictModule
+        DataModule wrapping the dataset for both AE and skewness tasks
+        (both use the same data).
+
+    Raises
+    ------
+    ValueError
+        If descriptors is not a 2D array.
+    """
+    if descriptors.ndim != 2:
+        raise ValueError(
+            f"descriptors must be a 2D array, got shape {descriptors.shape}"
+        )
+
+    n_samples, n_features = descriptors.shape
+
+    if feature_names is None:
+        feature_names = [f"desc_{i}" for i in range(n_features)]
+
+    if verbose:
+        print(f" - Descriptors shape: ({n_samples}, {n_features})")
+        print(f" - Feature names: {feature_names[:5]}{'...' if n_features > 5 else ''}")
+
+    dictionary = {"data": torch.Tensor(descriptors)}
+    feature_names_array = np.array(feature_names)
+    dataset = DictDataset(dictionary, feature_names=feature_names_array)
+
+    batch_size_list = batch_size if batch_size > 0 else 0
+    datamodule = DictModule(
+        dataset=[dataset, dataset], batch_size=batch_size_list
+    )
+
+    return dataset, datamodule
 
 class GeometryParser:
     def __init__(self, coord_file : str | pathlib.Path = None):

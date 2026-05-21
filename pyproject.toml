@@ -43,7 +43,7 @@ classifiers = [
 test = [
   "pytest>=6.1.2",
   "pytest-runner",
-  "pytest-cov", 
+  "pytest-cov",
   "codecov",
   "nbmake",
 ]
@@ -51,7 +51,11 @@ doc = [
   "sphinx",
   "nbsphinx",
   "furo",
-  "sphinx-copybutton", 
+  "sphinx-copybutton",
+]
+ase = [
+  "ase",
+  "mace-torch",
 ]
 
 [tool.setuptools]
