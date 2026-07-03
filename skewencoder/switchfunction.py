@@ -7,6 +7,7 @@ class SwitchFun:
         self.r0 = r0
         self.m = 12
         self.n = 6
+        self.d0 = 0.
         if FunType == "rational":
             self.FunType = "rational"
             if options is not None:
@@ -28,14 +29,15 @@ class SwitchFun:
 
     def __str__(self):
         print_str = "Switch function:\n"
-        print_str += f"r0 = {self.r0}, m,n = {(self.m, self.n)}\n"
+        print_str += f"r0 = {self.r0}, d0 = {self.d0}, m,n = {(self.m, self.n)}\n"
         print_str += f"funtype: {self.FunType}\n"
         return print_str
 
     def __call__(self, distances_lists : np.array = None):
         if distances_lists is not None:
             if self.FunType == "rational":
-                return (1. - (distances_lists / self.r0) ** self.n) / (1. - (distances_lists / self.r0) ** self.m)
+                shifted = (distances_lists - self.d0) / self.r0
+                return (1. - shifted ** self.n) / (1. - shifted ** self.m)
             else:
                 raise ValueError
     
