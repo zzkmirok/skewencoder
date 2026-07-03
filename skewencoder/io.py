@@ -287,46 +287,73 @@ def load_data(filenames_iter,filenames_all, multiple = 0, bs=0, pattern = r"^([A
 
 def create_dataset_from_descriptors(
     descriptors: np.ndarray,
+    skew_descriptors: np.ndarray = None,
     feature_names: list = None,
+    multiple: int = 1,
     batch_size: int = 0,
     verbose: bool = True,
 ):
-    """Create a DictDataset and DictModule from a numpy array of descriptors.
+    """Create AE/skewness DictDatasets and a multitask DictModule from descriptors.
 
-    Converts in-memory descriptor arrays (e.g., from MACE) into the
-    DictDataset/DictModule format consumed by skewencoder training functions.
+    In-memory counterpart of `load_data` for descriptor arrays (e.g., from
+    MACE). The MultiTaskCV trains its main autoencoder loss on all accumulated
+    data (`descriptors`) while the auxiliary skewness loss only sees the most
+    recent iteration's data (`skew_descriptors`), so the direction of the next
+    bias reflects where the newest sampling piled up.
 
     Parameters
     ----------
     descriptors : np.ndarray
-        2D array of shape (n_samples, n_features). Each row is one sample's
-        descriptor vector.
+        2D array of shape (n_samples, n_features) with all accumulated data,
+        used for the autoencoder task. Each row is one sample's descriptor
+        vector.
+    skew_descriptors : np.ndarray, optional
+        2D array of shape (n_skew_samples, n_features) with only the latest
+        iteration's data, used for the skewness task. If None, `descriptors`
+        is used for both tasks (only appropriate at iteration 0, when the
+        accumulated data is exactly one iteration).
     feature_names : list[str], optional
         Names for each feature dimension. If None, auto-generated as
         ["desc_0", "desc_1", ...].
+    multiple : int, optional
+        Ratio of accumulated to per-iteration data (typically iteration + 1).
+        Scales the AE batch size so both tasks stay in step, matching
+        `load_data`. Ignored for full-batch training.
     batch_size : int, optional
-        Batch size for the DataLoader. 0 means full-batch (all samples in one
+        Batch size for the skewness DataLoader; the AE DataLoader uses
+        `batch_size * multiple`. 0 means full-batch (all samples in one
         batch).
     verbose : bool, optional
         If True, print dataset shape info.
 
     Returns
     -------
-    dataset : DictDataset
-        Dataset with key "data" containing the descriptor tensor of shape
-        (n_samples, n_features).
+    AE_dataset : DictDataset
+        Dataset with key "data" containing all accumulated descriptors.
+    skew_dataset : DictDataset
+        Dataset with key "data" containing the latest iteration's descriptors.
     datamodule : DictModule
-        DataModule wrapping the dataset for both AE and skewness tasks
-        (both use the same data).
+        Multitask DataModule wrapping [AE_dataset, skew_dataset].
 
     Raises
     ------
     ValueError
-        If descriptors is not a 2D array.
+        If an input array is not 2D or feature dimensions do not match.
     """
     if descriptors.ndim != 2:
         raise ValueError(
             f"descriptors must be a 2D array, got shape {descriptors.shape}"
+        )
+    if skew_descriptors is None:
+        skew_descriptors = descriptors
+    if skew_descriptors.ndim != 2:
+        raise ValueError(
+            f"skew_descriptors must be a 2D array, got shape {skew_descriptors.shape}"
+        )
+    if skew_descriptors.shape[1] != descriptors.shape[1]:
+        raise ValueError(
+            f"skew_descriptors must have the same number of features as "
+            f"descriptors, got {skew_descriptors.shape[1]} != {descriptors.shape[1]}"
         )
 
     n_samples, n_features = descriptors.shape
@@ -335,19 +362,30 @@ def create_dataset_from_descriptors(
         feature_names = [f"desc_{i}" for i in range(n_features)]
 
     if verbose:
-        print(f" - Descriptors shape: ({n_samples}, {n_features})")
+        print(f" - AE descriptors shape: ({n_samples}, {n_features})")
+        print(f" - Skewness descriptors shape: {tuple(skew_descriptors.shape)}")
         print(f" - Feature names: {feature_names[:5]}{'...' if n_features > 5 else ''}")
 
-    dictionary = {"data": torch.Tensor(descriptors)}
     feature_names_array = np.array(feature_names)
-    dataset = DictDataset(dictionary, feature_names=feature_names_array)
-
-    batch_size_list = batch_size if batch_size > 0 else 0
-    datamodule = DictModule(
-        dataset=[dataset, dataset], batch_size=batch_size_list
+    AE_dataset = DictDataset(
+        {"data": torch.Tensor(descriptors)}, feature_names=feature_names_array
+    )
+    skew_dataset = DictDataset(
+        {"data": torch.Tensor(skew_descriptors)}, feature_names=feature_names_array
     )
 
-    return dataset, datamodule
+    if batch_size == 0:
+        batch_size_list = 0
+    else:
+        batch_size_list = [
+            [batch_size * multiple, batch_size],
+            [batch_size * multiple, batch_size],
+        ]
+    datamodule = DictModule(
+        dataset=[AE_dataset, skew_dataset], batch_size=batch_size_list
+    )
+
+    return AE_dataset, skew_dataset, datamodule
 
 class GeometryParser:
     def __init__(self, coord_file : str | pathlib.Path = None):

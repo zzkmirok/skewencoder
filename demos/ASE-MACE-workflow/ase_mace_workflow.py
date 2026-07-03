@@ -16,29 +16,28 @@ The workflow iterates:
 """
 
 import os
+
 import numpy as np
 import torch
-from scipy import stats
-
-from ase.io import read
-from ase.io.trajectory import Trajectory
-from ase.md.langevin import Langevin
 from ase import units
 from ase.calculators.mixing import SumCalculator
-
+from ase.io import read
+from ase.md.langevin import Langevin
 from mace.calculators import mace_mp
+from scipy import stats
 
-from skewencoder.io import create_dataset_from_descriptors
-from skewencoder.model_skewencoder import (
-    skewencoder_model_init,
-    skewencoder_model_trainer,
-    skewencoder_model_normalization,
-    cv_eval,
-)
 from skewencoder.gen_ASE import (
     DescriptorWeights,
     MACEDescriptorExtractor,
+    collect_descriptors_along_md,
     create_bias_calculator,
+)
+from skewencoder.io import create_dataset_from_descriptors
+from skewencoder.model_skewencoder import (
+    cv_eval,
+    skewencoder_model_init,
+    skewencoder_model_normalization,
+    skewencoder_model_trainer,
 )
 
 # ============================================================
@@ -48,17 +47,23 @@ from skewencoder.gen_ASE import (
 N_ITERATIONS = 5          # Number of bias-train-MD cycles
 N_MD_STEPS = 100          # MD steps per iteration (fast demo)
 TEMPERATURE_K = 410       # Temperature in Kelvin
-TIMESTEP_FS = 1.0         # Timestep in femtoseconds
+TIMESTEP_FS = 0.5         # Timestep in femtoseconds
 FRICTION = 0.01           # Langevin friction coefficient (1/fs)
-COLLECT_EVERY = 10        # Collect descriptors every N steps
+COLLECT_EVERY = 1       # Collect descriptors every N steps
 
 # Skewencoder training parameters
 LOSS_COEFF = 0.1          # Weight for skewness loss
-BATCH_SIZE = 0            # 0 = full batch training
+BATCH_SIZE = 10           
 
 # Bias parameters
 KAPPA = 300.0             # Wall spring constant
 OFFSET = 1.0             # Base offset from CV mean for wall placement
+
+# Dispersion correction
+# Some MACE foundation models/heads are already trained on dispersion-inclusive
+# reference data, in which case adding D3 double-counts dispersion. Set this to
+# True only if the chosen head targets a plain (dispersion-free) functional.
+USE_D3 = True            # Add explicit D3(BJ) dispersion via torch-dftd
 
 # Reproducibility
 SEED = 42
@@ -67,17 +72,22 @@ torch.manual_seed(SEED)
 
 # Paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-TRAJ_FILE = os.path.join(SCRIPT_DIR, "2NH3_CN_FT_410_912653.traj")
+INIT_FILE = os.path.join(SCRIPT_DIR, "init.traj")
 RESULTS_DIR = os.path.join(SCRIPT_DIR, "results")
+
+# The results directory holds the unbiased trajectory (below) and the per-
+# iteration biased trajectories/checkpoints. Create it up front so nothing is
+# silently skipped.
+os.makedirs(RESULTS_DIR, exist_ok=True)
 
 
 # ============================================================
 # Step 1: Load starting structure
 # ============================================================
-# Read the last frame from the test trajectory as our starting configuration.
-# This trajectory contains 2 NH3 molecules on a Ru(001) surface.
+# Read the single starting configuration from init.traj. The system is 2 NH3 molecules on a
+# Ru(105) surface.
 print("Step 1: Loading starting structure...")
-atoms = read(TRAJ_FILE, index=-1)
+atoms = read(INIT_FILE)
 print(f"  System: {atoms.get_chemical_formula()}, {len(atoms)} atoms")
 print(f"  Cell: {atoms.get_cell().lengths()}")
 
@@ -85,15 +95,40 @@ print(f"  Cell: {atoms.get_cell().lengths()}")
 # ============================================================
 # Step 2: Set up MACE calculator
 # ============================================================
-# Use the MACE-MP foundation model (small variant for fast demo).
+# Use the MACE-MH-1 multi-head foundation model with the OC20 head, which is
+# trained on catalysis data (adsorbates on metal surfaces) and thus suited to
+# NH3 on Ru(001). Available heads in mh-1: matpes_r2scan, mp_pbe_refit_add,
+# spice_wB97M, oc20_usemppbe, omol, omat_pbe.
 # For production use, replace with a fine-tuned model:
 #   mace_calc = MACECalculator(model_paths="path/to/model.model", ...)
 print("Step 2: Setting up MACE calculator...")
 device = "cuda" if torch.cuda.is_available() else "cpu"
-mace_calc = mace_mp(model="small", default_dtype="float64", device=device)
-atoms.calc = mace_calc
+mace_calc = mace_mp(model="mh-1", default_dtype="float64", device=device, head="oc20_usemppbe")
+
+# Optionally add D3(BJ) dispersion via torch-dftd. Keep `mace_calc` as the pure
+# MACE calculator (the descriptor extractor needs its internal MACE model), and
+# sum the D3 correction into a separate potential used to drive the dynamics.
+# When USE_D3 is False, the dynamics potential is MACE alone.
+if USE_D3:
+    # Imported lazily so users who leave USE_D3 disabled don't need torch-dftd.
+    from torch_dftd.torch_dftd3_calculator import TorchDFTD3Calculator
+
+    d3_calc = TorchDFTD3Calculator(
+        device=device,
+        damping="bj",
+        dtype=torch.float64,
+        xc="pbe",
+        cutoff=20.0 * units.Bohr,
+    )
+    pot_calc = SumCalculator([mace_calc, d3_calc])
+else:
+    d3_calc = None
+    pot_calc = mace_calc
+
+atoms.calc = pot_calc
 initial_energy = atoms.get_potential_energy()
 print(f"  Device: {device}")
+print(f"  D3 dispersion: {'enabled' if USE_D3 else 'disabled'}")
 print(f"  Initial energy: {initial_energy:.4f} eV")
 
 
@@ -129,7 +164,7 @@ with torch.no_grad():
     test_desc = descriptor_extractor.get_descriptors_differentiable(atoms, positions_tensor)
 n_features = len(test_desc)
 print(f"  Descriptor dimension: {n_features}")
-print(f"  Weights mode: element_based (N=2.0, H=1.0, Ru=0.0)")
+print("  Weights mode: element_based (N=2.0, H=1.0, Ru=0.0)")
 
 
 # ============================================================
@@ -140,97 +175,39 @@ print(f"  Weights mode: element_based (N=2.0, H=1.0, Ru=0.0)")
 print(f"Step 4: Running unbiased MD ({N_MD_STEPS} steps)...")
 
 
-def run_md_collect_descriptors(
-    atoms, descriptor_extractor, n_steps, temperature_K, timestep_fs, friction,
-    collect_every=10, trajectory_file=None
-):
-    """Run Langevin MD and collect MACE descriptors at regular intervals.
+def make_dyn(atoms):
+    """Build the Langevin NVT integrator from the demo's MD parameters.
 
-    Uses get_descriptors_differentiable (with torch.no_grad) to extract
-    descriptors directly from the MACE model's internal forward pass. This
-    works regardless of what calculator is currently attached to atoms (e.g.,
-    during biased MD with SumCalculator).
-
-    Parameters
-    ----------
-    atoms : ase.Atoms
-        Starting configuration (calculator must be attached).
-    descriptor_extractor : MACEDescriptorExtractor
-        Extracts descriptors from each frame.
-    n_steps : int
-        Total number of MD steps.
-    temperature_K : float
-        Target temperature in Kelvin.
-    timestep_fs : float
-        Integration timestep in femtoseconds.
-    friction : float
-        Langevin friction coefficient in 1/fs.
-    collect_every : int
-        Collect descriptors every this many steps.
-    trajectory_file : str, optional
-        If provided, write trajectory to this file.
-
-    Returns
-    -------
-    np.ndarray
-        Collected descriptors, shape (n_frames, n_features).
+    Owning MD setup here keeps the choice of thermostat and its parameters in
+    the demo; the library's ``collect_descriptors_along_md`` is thermostat-
+    agnostic and just runs whatever dynamics object it is handed.
     """
-    dyn = Langevin(
+    return Langevin(
         atoms,
-        timestep=timestep_fs * units.fs,
-        temperature_K=temperature_K,
-        friction=friction / units.fs,
+        timestep=TIMESTEP_FS * units.fs,
+        temperature_K=TEMPERATURE_K,
+        friction=FRICTION / units.fs,
     )
 
-    descriptors_list = []
 
-    def collect():
-        # Use differentiable mode (with no_grad for efficiency) to extract
-        # descriptors from the internal MACE model. This avoids depending on
-        # atoms.calc being the MACE calculator (works during biased MD too).
-        positions_tensor = torch.tensor(
-            atoms.get_positions(),
-            dtype=torch.float64,
-            device=descriptor_extractor.device,
-        )
-        with torch.no_grad():
-            desc = descriptor_extractor.get_descriptors_differentiable(atoms, positions_tensor)
-        descriptors_list.append(desc.cpu().numpy())
-
-    dyn.attach(collect, interval=collect_every)
-
-    if trajectory_file:
-        traj = Trajectory(trajectory_file, "w", atoms)
-        dyn.attach(traj.write, interval=collect_every)
-
-    dyn.run(n_steps)
-
-    if trajectory_file:
-        traj.close()
-
-    return np.array(descriptors_list)
-
-
-descriptors = run_md_collect_descriptors(
-    atoms, descriptor_extractor, N_MD_STEPS, TEMPERATURE_K, TIMESTEP_FS, FRICTION,
+unbiased_traj = os.path.join(RESULTS_DIR, "unbiased.traj")
+descriptors = collect_descriptors_along_md(
+    make_dyn(atoms), descriptor_extractor, N_MD_STEPS,
     collect_every=COLLECT_EVERY,
-    trajectory_file=os.path.join(RESULTS_DIR, "unbiased.traj") if os.path.isdir(RESULTS_DIR) else None,
+    trajectory_file=unbiased_traj,
 )
 print(f"  Collected {descriptors.shape[0]} frames, descriptor shape: {descriptors.shape}")
+print(f"  Unbiased trajectory saved to: {unbiased_traj}")
 
 
 # ============================================================
-# Step 5: Create dataset from collected descriptors
+# Step 5: Define encoder architecture
 # ============================================================
-# Convert the numpy descriptor array into the DictDataset/DictModule format
-# expected by skewencoder training functions.
-print("Step 5: Creating dataset from descriptors...")
-dataset, datamodule = create_dataset_from_descriptors(
-    descriptors, batch_size=BATCH_SIZE, verbose=True
-)
-
-# Define encoder architecture: input_dim -> hidden layers -> 1D latent (CV)
-encoder_layers = [n_features, 50, 30, 20, 10, 5, 1]
+# The dataset/datamodule are created inside the training loop from the
+# accumulated descriptors, so here we only fix the network architecture:
+# input_dim -> hidden layers -> 1D latent (CV)
+print("Step 5: Defining encoder architecture...")
+encoder_layers = [n_features, 128, 64, 32, 16, 8, 1]
 print(f"  Encoder architecture: {encoder_layers}")
 
 
@@ -246,8 +223,13 @@ print(f"  Encoder architecture: {encoder_layers}")
 print(f"\nStep 6: Starting iterative training ({N_ITERATIONS} iterations)...")
 print("=" * 60)
 
-os.makedirs(RESULTS_DIR, exist_ok=True)
+# The MultiTaskCV trains on two datasets: the autoencoder task uses all
+# accumulated descriptors so the CV stays valid over the whole explored
+# landscape, while the skewness task (and the wall-placement statistics) use
+# only the most recent MD run, so the bias direction reflects the newest
+# sampling.
 all_descriptors = descriptors.copy()
+latest_descriptors = descriptors.copy()
 
 for iteration in range(N_ITERATIONS):
     iter_folder = os.path.join(RESULTS_DIR, f"iter_{iteration}")
@@ -258,19 +240,23 @@ for iteration in range(N_ITERATIONS):
     # The model is an autoencoder with an auxiliary skewness loss that
     # encourages the latent CV to have non-Gaussian (skewed) distribution.
     print("  Training skewencoder...")
-    dataset, datamodule = create_dataset_from_descriptors(
-        all_descriptors, batch_size=BATCH_SIZE, verbose=False
+    AE_dataset, skew_dataset, datamodule = create_dataset_from_descriptors(
+        all_descriptors,
+        skew_descriptors=latest_descriptors,
+        multiple=iteration + 1,
+        batch_size=BATCH_SIZE,
+        verbose=False,
     )
-    model = skewencoder_model_init(dataset, encoder_layers, LOSS_COEFF)
+    model = skewencoder_model_init(AE_dataset, encoder_layers, LOSS_COEFF)
     metrics = skewencoder_model_trainer(model, datamodule, iter_folder=iter_folder)
 
-    # 6b: Normalize model output to [0, 1] range
-    model = skewencoder_model_normalization(model, dataset)
+    # 6b: Normalize model output to [0, 1] range over all accumulated data
+    model = skewencoder_model_normalization(model, AE_dataset)
 
-    # 6c: Evaluate CV on training data and compute statistics
+    # 6c: Evaluate CV on the latest iteration's data and compute statistics
     # The skewness determines which direction to push: positive skewness
     # means data is piled on the left → push rightward (lower wall).
-    nn_output = cv_eval(model, dataset).flatten()
+    nn_output = cv_eval(model, skew_dataset).flatten()
     mu = float(np.mean(nn_output))
     var = float(np.var(nn_output))
     skewness = float(stats.skew(nn_output))
@@ -293,29 +279,32 @@ for iteration in range(N_ITERATIONS):
     wall_type = "LOWER" if bias_calc.is_lower_wall else "UPPER"
     print(f"  Bias: {wall_type}_WALL at AT={bias_calc.wall_position:.4f}, kappa={KAPPA}")
 
-    # 6e: Combine MACE potential + bias using ASE's SumCalculator
-    # Both calculators contribute independently to energy and forces.
-    combined_calc = SumCalculator([mace_calc, bias_calc])
+    # 6e: Combine the base potential (MACE, optionally + D3) with the bias using
+    # ASE's SumCalculator. All calculators contribute independently to energy
+    # and forces.
+    base_calcs = [mace_calc, d3_calc] if USE_D3 else [mace_calc]
+    combined_calc = SumCalculator(base_calcs + [bias_calc])
     atoms.calc = combined_calc
 
     # 6f: Run biased MD and collect new descriptors
     # The bias pushes the system toward unexplored CV regions.
     print(f"  Running biased MD ({N_MD_STEPS} steps)...")
-    new_descriptors = run_md_collect_descriptors(
-        atoms, descriptor_extractor, N_MD_STEPS, TEMPERATURE_K, TIMESTEP_FS, FRICTION,
+    new_descriptors = collect_descriptors_along_md(
+        make_dyn(atoms), descriptor_extractor, N_MD_STEPS,
         collect_every=COLLECT_EVERY,
         trajectory_file=os.path.join(iter_folder, "biased.traj"),
     )
     print(f"  Collected {new_descriptors.shape[0]} new frames")
 
     # 6g: Accumulate descriptors for next iteration
-    # All data from all iterations is used for training to ensure the model
-    # captures the full explored landscape.
+    # The AE task trains on all data from all iterations so the model captures
+    # the full explored landscape; the skewness task only sees this run's data.
     all_descriptors = np.vstack([all_descriptors, new_descriptors])
+    latest_descriptors = new_descriptors
     print(f"  Total accumulated frames: {all_descriptors.shape[0]}")
 
-    # Restore MACE calculator for next iteration's unbiased descriptor collection
-    atoms.calc = mace_calc
+    # Restore the unbiased MACE+D3 potential for the next iteration
+    atoms.calc = pot_calc
 
 
 # ============================================================

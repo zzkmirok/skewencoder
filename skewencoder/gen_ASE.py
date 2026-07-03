@@ -17,6 +17,7 @@ __all__ = [
     "MACEDescriptorExtractor",
     "SkewencoderBiasCalculator",
     "create_bias_calculator",
+    "collect_descriptors_along_md",
 ]
 
 
@@ -499,3 +500,78 @@ def create_bias_calculator(
         kappa=kappa,
         is_lower_wall=is_lower_wall,
     )
+
+
+def collect_descriptors_along_md(
+    dyn,
+    descriptor_extractor: MACEDescriptorExtractor,
+    n_steps: int,
+    collect_every: int = 10,
+    trajectory_file: Optional[str] = None,
+) -> np.ndarray:
+    """Run a molecular dynamics simulation and collect MACE descriptors.
+
+    Thermostat-agnostic: the caller is responsible for constructing and
+    configuring the ASE dynamics object (e.g. ``Langevin``, ``NoseHoover``,
+    ``VelocityVerlet``) with the desired temperature, timestep, and friction.
+    This function only attaches a descriptor collector (and, optionally, a
+    trajectory writer), runs the dynamics, and returns the collected
+    descriptors.
+
+    Descriptors are extracted with ``get_descriptors_differentiable`` under
+    ``torch.no_grad``, reading directly from the internal MACE model. This works
+    regardless of which calculator is currently attached to the atoms (e.g.
+    during biased MD where ``atoms.calc`` is a ``SumCalculator``).
+
+    Parameters
+    ----------
+    dyn : ase.md.md.MolecularDynamics
+        A fully-configured ASE dynamics object. Its ``atoms`` (with a calculator
+        already attached) is used as the simulated system.
+    descriptor_extractor : MACEDescriptorExtractor
+        Extracts descriptors from each collected frame.
+    n_steps : int
+        Total number of MD steps to run.
+    collect_every : int
+        Collect descriptors (and write a trajectory frame) every this many steps.
+    trajectory_file : str, optional
+        If provided, write the trajectory to this file.
+
+    Returns
+    -------
+    np.ndarray
+        Collected descriptors, shape (n_frames, n_features).
+    """
+    from ase.io.trajectory import Trajectory
+
+    atoms = dyn.atoms
+    descriptors_list = []
+
+    def collect():
+        # Use differentiable mode (with no_grad for efficiency) to extract
+        # descriptors from the internal MACE model. This avoids depending on
+        # atoms.calc being the MACE calculator (works during biased MD too).
+        positions_tensor = torch.tensor(
+            atoms.get_positions(),
+            dtype=torch.float64,
+            device=descriptor_extractor.device,
+        )
+        with torch.no_grad():
+            desc = descriptor_extractor.get_descriptors_differentiable(
+                atoms, positions_tensor
+            )
+        descriptors_list.append(desc.cpu().numpy())
+
+    dyn.attach(collect, interval=collect_every)
+
+    traj = None
+    if trajectory_file:
+        traj = Trajectory(trajectory_file, "w", atoms)
+        dyn.attach(traj.write, interval=collect_every)
+
+    dyn.run(n_steps)
+
+    if traj is not None:
+        traj.close()
+
+    return np.array(descriptors_list)

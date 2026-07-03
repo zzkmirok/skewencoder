@@ -6,6 +6,7 @@ from skewencoder.gen_ASE import (
     DescriptorWeights,
     MACEDescriptorExtractor,
     SkewencoderBiasCalculator,
+    collect_descriptors_along_md,
     create_bias_calculator,
     _parse_irreps_invariant_indices,
 )
@@ -290,3 +291,68 @@ class TestMACEDescriptorExtractor:
         desc_inv = extractor_inv.get_descriptors(atoms)
         desc_all = extractor_all.get_descriptors(atoms)
         assert desc_inv.shape[0] <= desc_all.shape[0]
+
+
+class TestCollectDescriptorsAlongMD:
+    """Smoke tests for the thermostat-agnostic MD descriptor collector.
+
+    Uses a cheap EMT potential and a mock extractor, so these run without
+    mace-torch installed.
+    """
+
+    N_FEATURES = 8
+
+    def _make_extractor(self):
+        n_features = self.N_FEATURES
+
+        class MockExtractor:
+            device = torch.device("cpu")
+
+            def get_descriptors_differentiable(self, atoms, positions_tensor):
+                # Deterministic per-frame vector derived from the positions.
+                return positions_tensor.reshape(-1)[:n_features].double().clone()
+
+        return MockExtractor()
+
+    def _make_dyn(self):
+        from ase import Atoms, units
+        from ase.calculators.emt import EMT
+        from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
+        from ase.md.verlet import VelocityVerlet
+
+        atoms = Atoms(
+            "Cu4",
+            positions=[[0, 0, 0], [2.5, 0, 0], [0, 2.5, 0], [0, 0, 2.5]],
+            cell=[10, 10, 10],
+            pbc=True,
+        )
+        atoms.calc = EMT()
+        MaxwellBoltzmannDistribution(atoms, temperature_K=100)
+        return VelocityVerlet(atoms, timestep=1.0 * units.fs)
+
+    def test_returns_descriptor_array(self):
+        dyn = self._make_dyn()
+        extractor = self._make_extractor()
+        desc = collect_descriptors_along_md(
+            dyn, extractor, n_steps=10, collect_every=5
+        )
+        assert desc.ndim == 2
+        assert desc.shape[1] == self.N_FEATURES
+        assert desc.shape[0] >= 1
+
+    def test_trajectory_frames_match_descriptor_count(self, tmp_path):
+        import os
+
+        from ase.io import read as ase_read
+
+        dyn = self._make_dyn()
+        extractor = self._make_extractor()
+        traj_file = str(tmp_path / "md.traj")
+        desc = collect_descriptors_along_md(
+            dyn, extractor, n_steps=10, collect_every=5, trajectory_file=traj_file
+        )
+        assert os.path.isfile(traj_file)
+        # Collector and trajectory writer are attached at the same interval, so
+        # the trajectory must have exactly one frame per collected descriptor.
+        frames = ase_read(traj_file, index=":")
+        assert len(frames) == desc.shape[0]
