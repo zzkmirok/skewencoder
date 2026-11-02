@@ -23,7 +23,6 @@ dependencies = [
     "KDEpy",
     "networkx",
     "scikit-learn<1.8", 
-    "pydantic<2",
     "mlcolvar @ git+https://github.com/zzkmirok/mlcolvar.git@zhikun-mlskew" 
 ]
 requires-python = ">=3.10"
