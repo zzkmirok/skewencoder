@@ -81,6 +81,13 @@ class PlumedInput:
         self.print_stride : int = 10
         self.simulation_folder : str = "."
         self.additional_blocks = None
+        self.n_atoms : int = sum(len(atoms) for atoms in self.atom_list.values())
+        # PyCV shared object for the van der Waals contact wall; None: locate it with the installed pycv package
+        self.pycv_library : str = None
+        self.vdw_contact_label = "vdw_contact"
+        self.vdw_wall_label = "vdw_wall"
+        self.vdw_wall_kappa = 250
+        self.vdw_constr_in_input = False
         # TODO: Is it normal to add assertion here?
         if self.Options is not None:
             for key in self.Options.keys():
@@ -128,7 +135,10 @@ class PlumedInput:
                     self.contr_all = self.Options[key]      
                 elif key == "vdw_constr":
                     assert isinstance(self.Options[key], bool)
-                    self.vdw_constr = self.Options[key]      
+                    self.vdw_constr = self.Options[key]
+                elif key == "pycv_library":
+                    assert isinstance(self.Options[key], str)
+                    self.pycv_library = self.Options[key]
                 else:
                     pass
         
@@ -161,10 +171,10 @@ class PlumedInput:
             if additional_snippet is not None:
                 plumed_input_file.append(self.gen_additional_commands_snippet())
         
-        if self.vdw_constr and self.vdw_pairs:
-            vdw_constr_snippet = self.gen_plumed_vdw_constr_snippet()
-            if vdw_constr_snippet:
-                plumed_input_file.append(vdw_constr_snippet)
+        # vdw_pairs is set only when the initial geometry has more than one fragment
+        self.vdw_constr_in_input = bool(self.vdw_constr and self.vdw_pairs)
+        if self.vdw_constr_in_input:
+            plumed_input_file.append(self.gen_plumed_vdw_constr_snippet())
 
         if self.contr_all:
             plumed_input_file.append(self.gen_plumed_pairwise_constr_snippet())
@@ -313,6 +323,9 @@ class PlumedInput:
                 if isinstance(obj, DISTANCE):
                     print_args.append(obj.label)
         
+        if self.vdw_constr_in_input:
+            print_args += [f"{self.vdw_contact_label}.py-gap", f"{self.vdw_contact_label}.py-nfrag", f"{self.vdw_wall_label}.bias"]
+
         if self.if_biased:
             for label in self.default_PYTORCH_MODEL_labels:
                 print_args.append((label+".*"))
@@ -325,37 +338,23 @@ class PlumedInput:
         return f"PRINT FMT=%g STRIDE={self.print_stride} FILE={self.simulation_folder}/COLVAR ARG={','.join(print_args)}"
     
     def gen_plumed_vdw_constr_snippet(self):
-        vdw_constr_snippet : list[str] = []
+        """PyCV wall that keeps all fragments in van der Waals contact.
 
-        vdw_radius = {"C": 1.7, "O": 1.52, "H": 1.2, "N": 1.55}
-
-        for index, vdw_pair in enumerate(self.vdw_pairs):
-            vdw_distance = 0.0
-            bond_type = set()
-            for atom in vdw_pair[1]:
-                for key,value in self.atom_list.items():
-                    if atom in value:
-                        bond_type.add(key)
-            if len(bond_type) == 1:
-                for key, value in vdw_radius.items():
-                    if key in bond_type:
-                        vdw_distance = 2*value
-                        break
-            elif len(bond_type) == 2:
-                for key,value in vdw_radius.items():
-                    if key in bond_type:
-                        vdw_distance += value
-            else:
-                raise ValueError("Failed to read atom pairs with shortest distances among molecules")
-
-
-            if vdw_pair[0] > vdw_distance:
-                vdw_d_label = f"vdw_d_{index}"
-                vdw_constr_snippet.append(DISTANCE(label=vdw_d_label, atoms=vdw_pair[1]).build())
-                vdw_wall_label = f"vdw_wall_{index}"
-                vdw_constr_snippet.append(WALL(label=vdw_wall_label,is_lower_wall=False,ARG=vdw_d_label, AT=vdw_distance, KAPPA=[250]).build())
-
-        if len(vdw_constr_snippet) == 0:
-            return None
-        else:
-            return  "\n".join(vdw_constr_snippet)
+        The CV (skewencoder.contactwall) re-detects fragments at every step and measures the
+        bottleneck gap beyond van der Waals contact, so the wall follows bond formation and breaking.
+        It is flat (zero force) while every fragment touches the rest.
+        """
+        if self.unit != "A":
+            raise ValueError(f"the van der Waals contact wall assumes UNITS LENGTH=A, got {self.unit}")
+        pycv_library = self.pycv_library
+        if pycv_library is None:
+            from pycv import getPythonCVInterface
+            pycv_library = getPythonCVInterface()
+        nopbc = " NOPBC" if self.distance_options and "NOPBC" in self.distance_options else ""
+        return "\n".join([
+            f"LOAD FILE={pycv_library}",
+            f"{self.vdw_contact_label}: PYCVINTERFACE ATOMS=1-{self.n_atoms} IMPORT=skewencoder.contactwall "
+            f"INIT=plumedInit CALCULATE=plumedCalculate{nopbc}",
+            WALL(label=self.vdw_wall_label, is_lower_wall=False, ARG=f"{self.vdw_contact_label}.py-gap",
+                 AT=[0.0], KAPPA=[self.vdw_wall_kappa]).build(),
+        ])
