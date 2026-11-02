@@ -18,7 +18,7 @@ from collections.abc import Sequence, Mapping, Set
 
 from mlcolvar.data import DictDataset, DictModule, DictLoader
 
-from .switchfunction import SwitchFun
+from .elements import BOND_SCALE, bond_cutoff
 
 import networkx as nx
 
@@ -366,25 +366,20 @@ class GeometryParser:
         
         return coordinates_list
     
-    def parse_adj_list(self, r_heavy_atoms: float = 1.7, r_H : float = 1.2):
-        adj_list: Mapping[int, list[int]] = {}
-        sw = SwitchFun(r0=r_heavy_atoms)
-        for i in range(self.coordinates_list.shape[0] - 1):
-            for j in range(i+1, self.coordinates_list.shape[0]):
-                for key in self.atom_list.keys():
-                    if (i in self.atom_list[key]) or (j in self.atom_list[key]):
-                        if key == "H":
-                            sw.set_r0(r_H)
-                        break
+    def parse_adj_list(self, bond_scale: float = BOND_SCALE):
+        """Bonded neighbours of each atom: r_ij < bond_scale * (Rcov_i + Rcov_j), as in chemtrayzer."""
+        n_atoms = self.coordinates_list.shape[0]
+        symbols = [None] * n_atoms
+        for atom_type, indices in self.atom_list.items():
+            for index in indices:
+                symbols[index] = atom_type
+        adj_list: Mapping[int, list[int]] = {i: [] for i in range(n_atoms)}
+        for i in range(n_atoms - 1):
+            for j in range(i+1, n_atoms):
                 distance = np.linalg.norm(self.coordinates_list[i,:] - self.coordinates_list[j,:])
-                if i not in adj_list:
-                    adj_list[i] = []
-                if j not in adj_list:
-                    adj_list[j] = []
-                if sw(distance) > 0.5:
+                if distance < bond_cutoff(symbols[i], symbols[j], bond_scale):
                     adj_list[i].append(j)
                     adj_list[j].append(i)
-                sw.set_r0(r_heavy_atoms)
         return adj_list
     
     def group_components(self):
