@@ -34,10 +34,19 @@ class SwitchFun:
         return print_str
 
     def __call__(self, distances_lists : np.array = None):
+        """PLUMED RATIONAL: s = (1 - x^n) / (1 - x^m) with x = (r - d0) / r0.
+
+        As in PLUMED, s = 1 for r <= d0; otherwise even powers of a negative x would make s fall
+        again for r < d0. At x = 1 the 0/0 is replaced by its limit n/m.
+        """
         if distances_lists is not None:
             if self.FunType == "rational":
-                shifted = (distances_lists - self.d0) / self.r0
-                return (1. - shifted ** self.n) / (1. - shifted ** self.m)
+                shifted = np.maximum((np.asarray(distances_lists, dtype=float) - self.d0) / self.r0, 0.)
+                num = 1. - shifted ** self.n
+                den = 1. - shifted ** self.m
+                at_one = np.isclose(den, 0.)
+                s = np.where(at_one, self.n / self.m, num / np.where(at_one, 1., den))
+                return s[()]
             else:
                 raise ValueError
     

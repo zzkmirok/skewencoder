@@ -24,6 +24,8 @@ from skewencoder.switchfunction import SwitchFun
 
 # TODO: should be static
 
+# Width of the bond switching function in units of the bond length, see State_detection.
+R0_FRACTION = 0.25
 
 atomic_numbers = {
     "H": 1,  # Hydrogen
@@ -173,7 +175,16 @@ class State_detection:
         bond_type_dict: Mapping[str, Mapping[str, Union[float, Tuple[int, int]]]],
         n_heavy_atom_pairs: int,
         pattern: str = r"^([A-Za-z]+)\d+([A-Za-z]+)\d+$",
+        r0_fraction: float = R0_FRACTION,
     ):
+        """Switching function of each bond type: rational(m, n) with d0 = L and r0 = r0_fraction * L,
+        where L is the "bond length" of the type (a typical single-bond length).
+
+        s = 1 up to L, so shorter (double, triple) bonds count as bonded too. With the default
+        r0_fraction = 0.25, m,n = (12, 6) and interval (0.3, 0.7), a pair is bonded below 1.22 L
+        and broken above 1.29 L: between stretched bonds (up to about 1.1 L at 300 K) and the
+        distance between two atoms bonded to the same atom (1-3 pairs, about 1.45 L and more).
+        """
         self.interval = interval
         self.bond_type_dict = bond_type_dict
         self.sw_dict: Mapping[str, SwitchFun] = {}
@@ -188,7 +199,7 @@ class State_detection:
         for bond_name, options in self.bond_type_dict.items():
             m = 12
             n = 6
-            bond_length_boundary = None
+            bond_length = None
             for opt, opt_value in options.items():
                 # TODO: A random number for init the variable, might change later
                 # Might change to switch case
@@ -209,15 +220,16 @@ class State_detection:
                             f"Wrong type for option {opt} {type(opt_value)}"
                         )
                     else:
-                        bond_length_boundary = opt_value * 1.2
+                        bond_length = opt_value
                 else:
                     raise ValueError()
             # TODO: More exception handling
-            if bond_length_boundary is None:
+            if bond_length is None:
                 raise ValueError()
             else:
                 temp_switch_fun = SwitchFun(
-                    bond_length_boundary, options={"m": m, "n": n}
+                    r0_fraction * bond_length,
+                    options={"m": m, "n": n, "d0": bond_length},
                 )
             self.sw_dict[bond_name] = temp_switch_fun
 
