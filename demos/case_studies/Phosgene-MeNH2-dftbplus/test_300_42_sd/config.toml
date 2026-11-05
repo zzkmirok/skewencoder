@@ -1,0 +1,34 @@
+# Selects the input templates in <config_folder>/<driver>/
+driver = "dftbplus"
+
+[simulation]
+system = "CH3NH2_COCl2_vdw_gfn2" # geometry file name in systems_folder, without the .xyz suffix
+systems_folder = "../systems" # path to the folder storing geometries
+config_folder = "../simulation" # path to the folder storing the DFTB+ input templates
+box = 15.0 # edge of the cubic periodic box in Angstrom; the molecules are centred in it
+temperature = 300.0 # K
+timestep = 0.5 # fs
+n_steps = 5000 # MD steps per segment (unbiased run and every biased iteration)
+coupling_strength = 3000.0 # Nose-Hoover coupling strength in cm^-1
+charge = 0
+electronic_temperature = 300.0 # K, Fermi filling, helps SCC convergence while bonds break
+seed = 42 # DFTB+ random seed (initial velocities); set per replica by config_all.zsh
+# Remarks: in `PhosgeneDemo.py`, `REPLACE_DICT` stores all the keys and values that have to be changed in the
+# templates. If keys are added or removed, change them both here and in `REPLACE_DICT`.
+
+[loxodynamics]
+kappa = 300 # force constant of the wall on the skewencoder CV (loxodynamics kappa)
+max_iter = 2
+batch_size = 100 # Do not change
+warm_start = false # Just leave for future interface extension, not activated
+state_detection = false # Just leave for future interface extension, not activated
+
+[loxodynamics.skewencoder]
+hidden_layers = [50, 30, 20, 10, 5] # Only hidden layers; the input layer is the number of heavy-atom descriptors
+threshold = 0.3 # p value in the switching function
+
+[plumed]
+stride = 10 # PRINT stride and trajectory stride, in MD steps
+# Contact wall: keeps all molecular fragments in van der Waals contact (skewencoder.contactwall via PyCV).
+contact_wall = true
+pycv_library = "" # PythonCVInterface.so for LOAD FILE=...; empty: use the one of the installed pycv package

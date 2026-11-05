@@ -1,0 +1,90 @@
+5398283
+The objective dir is /rwthfs/rz/cluster/work/yy508225/skewencoder/demos/case_studies/Phosgene-MeNH2-dftbplus/test_300_42
+[INFO] Module plumed-metatomic/2.10.2 loaded.
+[INFO] Module DFTB+/25.1-PLUMED-2.10.2-metatomic-0.1.13-CUDA-12.8.0 loaded.
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/trainer/connectors/logger_connector/logger_connector.py:76: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `lightning.pytorch` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+SLURM auto-requeueing enabled. Setting signal handlers.
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/loops/fit_loop.py:321: The number of training batches (4) is smaller than the logging interval Trainer(log_every_n_steps=10). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+/rwthfs/rz/cluster/work/yy508225/skewencoder/demos/case_studies/Phosgene-MeNH2-dftbplus/test_300_42
+******************************************************
+Start dftbplus CH3NH2_COCl2_vdw_gfn2 unbiased simulation
+******************************************************
+current key is C1C5
+current bond type: C-C
+iter = 0, last_rows_mean=0.06294835022798434, key = C1C5
+current key is Cl2Cl3
+current bond type: Cl-Cl
+iter = 1, last_rows_mean=0.23396941350335512, key = Cl2Cl3
+current key is C1Cl2
+current bond type: C-Cl
+iter = 2, last_rows_mean=0.7036024754634798, key = C1Cl2
+current key is C1Cl3
+current bond type: C-Cl
+iter = 3, last_rows_mean=0.7036011068996101, key = C1Cl3
+current key is C5Cl2
+current bond type: C-Cl
+iter = 4, last_rows_mean=0.07318684727638171, key = C5Cl2
+current key is C5Cl3
+current bond type: C-Cl
+iter = 5, last_rows_mean=0.0817633601624506, key = C5Cl3
+current key is C1O4
+current bond type: C-O
+iter = 6, last_rows_mean=0.9227588020286163, key = C1O4
+current key is C5O4
+current bond type: C-O
+iter = 7, last_rows_mean=0.012221445765208934, key = C5O4
+current key is C1N9
+current bond type: C-N
+iter = 8, last_rows_mean=0.49681203340419544, key = C1N9
+Not Stable atoms pair:
+ iter = 8, last_rows_mean=0.49681203340419544, key = C1N9
+dataset_len is [100, 100]
+batch_size is [100, 100]
+n_batches is [1, 1]
+dataset_len is [401, 401]
+batch_size is [100, 100]
+n_batches is [4, 4]
+Epoch 14/999 ━━━━━━━━━━━━━━━━━━━━━ 4/4 0:00:00 • 0:00:00 205.53it/s v_num: 0.000
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/core/module.py:1549: `LightningModule.to_torchscript` has been deprecated in v2.7 and will be removed in v2.8. TorchScript is deprecated in PyTorch. Use `torch.export.export()` for model exporting instead. See https://pytorch.org/docs/stable/export.html for more information.
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+SLURM auto-requeueing enabled. Setting signal handlers.
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/utilities/data.py:79: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 200. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/loops/fit_loop.py:321: The number of training batches (4) is smaller than the logging interval Trainer(log_every_n_steps=10). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+******************************************************
+At the iteration 0 training step, 
+The current state is 0
+******************************************************
+dftbplus CH3NH2_COCl2_vdw_gfn2 simulation at iteration 0 with plumed ends
+current key is C1C5
+current bond type: C-C
+iter = 0, last_rows_mean=0.07326063596402149, key = C1C5
+current key is Cl2Cl3
+current bond type: Cl-Cl
+iter = 1, last_rows_mean=0.18007272097050384, key = Cl2Cl3
+current key is C1Cl2
+current bond type: C-Cl
+iter = 2, last_rows_mean=0.6024747294206082, key = C1Cl2
+Not Stable atoms pair:
+ iter = 2, last_rows_mean=0.6024747294206082, key = C1Cl2
+****************************
+Apply Warm Start
+****************************
+dataset_len is [200, 100]
+batch_size is [200, 100]
+n_batches is [1, 1]
+dataset_len is [802, 401]
+batch_size is [200, 100]
+n_batches is [4, 4]
+Epoch 10/999 ━━━━━━━━━━━━━━━━━━━━━ 4/4 0:00:00 • 0:00:00 194.68it/s v_num: 1.000
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/core/module.py:1549: `LightningModule.to_torchscript` has been deprecated in v2.7 and will be removed in v2.8. TorchScript is deprecated in PyTorch. Use `torch.export.export()` for model exporting instead. See https://pytorch.org/docs/stable/export.html for more information.
+******************************************************
+At the iteration 1 training step, 
+The current state is 0
+******************************************************
+dftbplus CH3NH2_COCl2_vdw_gfn2 simulation at iteration 1 with plumed ends
+there are in total 0 states

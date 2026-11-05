@@ -1,0 +1,140 @@
+5425944
+The objective dir is /rwthfs/rz/cluster/work/yy508225/skewencoder/demos/case_studies/Phosgene-MeNH2-dftbplus/test_300_42_sd
+[INFO] Module plumed-metatomic/2.10.2 loaded.
+[INFO] Module DFTB+/25.1-PLUMED-2.10.2-metatomic-0.1.13-CUDA-12.8.0 loaded.
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/trainer/connectors/logger_connector/logger_connector.py:76: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `lightning.pytorch` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+SLURM auto-requeueing enabled. Setting signal handlers.
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/loops/fit_loop.py:321: The number of training batches (4) is smaller than the logging interval Trainer(log_every_n_steps=10). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+/rwthfs/rz/cluster/work/yy508225/skewencoder/demos/case_studies/Phosgene-MeNH2-dftbplus/test_300_42_sd
+******************************************************
+Start dftbplus CH3NH2_COCl2_vdw_gfn2 unbiased simulation
+******************************************************
+current key is C1C5
+current bond type: C-C
+iter = 0, last_rows_mean=0.0005179458175332239, key = C1C5
+current key is Cl2Cl3
+current bond type: Cl-Cl
+iter = 1, last_rows_mean=0.024406488178734944, key = Cl2Cl3
+current key is C1Cl2
+current bond type: C-Cl
+iter = 2, last_rows_mean=0.999985639059139, key = C1Cl2
+current key is C1Cl3
+current bond type: C-Cl
+iter = 3, last_rows_mean=0.9999856361448334, key = C1Cl3
+current key is C5Cl2
+current bond type: C-Cl
+iter = 4, last_rows_mean=0.0007351469329685992, key = C5Cl2
+current key is C5Cl3
+current bond type: C-Cl
+iter = 5, last_rows_mean=0.000960600567782395, key = C5Cl3
+current key is C1O4
+current bond type: C-O
+iter = 6, last_rows_mean=1.0, key = C1O4
+current key is C5O4
+current bond type: C-O
+iter = 7, last_rows_mean=2.184977230597283e-05, key = C5O4
+current key is C1N9
+current bond type: C-N
+iter = 8, last_rows_mean=0.7794979367090953, key = C1N9
+current key is C5N9
+current bond type: C-N
+iter = 9, last_rows_mean=1.0, key = C5N9
+current key is Cl2O4
+current bond type: O-Cl
+iter = 10, last_rows_mean=0.009013239214608618, key = Cl2O4
+current key is Cl3O4
+current bond type: O-Cl
+iter = 11, last_rows_mean=0.008739084952210896, key = Cl3O4
+current key is Cl2N9
+current bond type: N-Cl
+iter = 12, last_rows_mean=0.006463197249597114, key = Cl2N9
+current key is Cl3N9
+current bond type: N-Cl
+iter = 13, last_rows_mean=0.0061013802669197485, key = Cl3N9
+current key is O4N9
+current bond type: N-O
+iter = 14, last_rows_mean=0.003756032937041925, key = O4N9
+dataset_len is [100, 100]
+batch_size is [100, 100]
+n_batches is [1, 1]
+dataset_len is [401, 401]
+batch_size is [100, 100]
+n_batches is [4, 4]
+Epoch 14/999 ━━━━━━━━━━━━━━━━━━━━━ 4/4 0:00:00 • 0:00:00 228.23it/s v_num: 0.000
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/core/module.py:1549: `LightningModule.to_torchscript` has been deprecated in v2.7 and will be removed in v2.8. TorchScript is deprecated in PyTorch. Use `torch.export.export()` for model exporting instead. See https://pytorch.org/docs/stable/export.html for more information.
+GPU available: False, used: False
+TPU available: False, using: 0 TPU cores
+💡 Tip: For seamless cloud logging and experiment tracking, try installing [litlogger](https://pypi.org/project/litlogger/) to enable LitLogger, which logs metrics and artifacts automatically to the Lightning Experiments platform.
+SLURM auto-requeueing enabled. Setting signal handlers.
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/utilities/data.py:79: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 200. To avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/loops/fit_loop.py:321: The number of training batches (4) is smaller than the logging interval Trainer(log_every_n_steps=10). Set a lower value for log_every_n_steps if you want to see logs for the training epoch.
+******************************************************
+At the iteration 0 training step, 
+The current state is 1
+******************************************************
+dftbplus CH3NH2_COCl2_vdw_gfn2 simulation at iteration 0 with plumed ends
+current key is C1C5
+current bond type: C-C
+iter = 0, last_rows_mean=0.0008247116595481676, key = C1C5
+current key is Cl2Cl3
+current bond type: Cl-Cl
+iter = 1, last_rows_mean=0.008375352393243548, key = Cl2Cl3
+current key is C1Cl2
+current bond type: C-Cl
+iter = 2, last_rows_mean=0.9859089706823313, key = C1Cl2
+current key is C1Cl3
+current bond type: C-Cl
+iter = 3, last_rows_mean=0.9996164171188484, key = C1Cl3
+current key is C5Cl2
+current bond type: C-Cl
+iter = 4, last_rows_mean=0.0008607372024383185, key = C5Cl2
+current key is C5Cl3
+current bond type: C-Cl
+iter = 5, last_rows_mean=0.0012861645416656926, key = C5Cl3
+current key is C1O4
+current bond type: C-O
+iter = 6, last_rows_mean=1.0, key = C1O4
+current key is C5O4
+current bond type: C-O
+iter = 7, last_rows_mean=2.3571409136734967e-05, key = C5O4
+current key is C1N9
+current bond type: C-N
+iter = 8, last_rows_mean=0.9935084925408594, key = C1N9
+current key is C5N9
+current bond type: C-N
+iter = 9, last_rows_mean=1.0, key = C5N9
+current key is Cl2O4
+current bond type: O-Cl
+iter = 10, last_rows_mean=0.004666097489458602, key = Cl2O4
+current key is Cl3O4
+current bond type: O-Cl
+iter = 11, last_rows_mean=0.00742117360508877, key = Cl3O4
+current key is Cl2N9
+current bond type: N-Cl
+iter = 12, last_rows_mean=0.007950103477911674, key = Cl2N9
+current key is Cl3N9
+current bond type: N-Cl
+iter = 13, last_rows_mean=0.007231091599823341, key = Cl3N9
+current key is O4N9
+current bond type: N-O
+iter = 14, last_rows_mean=0.005597439898468928, key = O4N9
+****************************
+Restart from Scratch
+****************************
+dataset_len is [200, 100]
+batch_size is [200, 100]
+n_batches is [1, 1]
+dataset_len is [802, 401]
+batch_size is [200, 100]
+n_batches is [4, 4]
+Epoch 13/999 ━━━━━━━━━━━━━━━━━━━━━ 4/4 0:00:00 • 0:00:00 222.87it/s v_num: 1.000
+/rwthfs/rz/cluster/hpcwork/noco0020/ZZh/chemtrayzer-zzk/lib/python3.13/site-packages/lightning/pytorch/core/module.py:1549: `LightningModule.to_torchscript` has been deprecated in v2.7 and will be removed in v2.8. TorchScript is deprecated in PyTorch. Use `torch.export.export()` for model exporting instead. See https://pytorch.org/docs/stable/export.html for more information.
+******************************************************
+At the iteration 1 training step, 
+The current state is 1
+******************************************************
+dftbplus CH3NH2_COCl2_vdw_gfn2 simulation at iteration 1 with plumed ends
+there are in total 1 states

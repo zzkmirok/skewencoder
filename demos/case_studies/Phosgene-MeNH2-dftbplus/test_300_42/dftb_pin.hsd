@@ -1,0 +1,131 @@
+Geometry = GenFormat {
+11 S
+C Cl O H N
+1 1 8.3161818000 9.5775180200 6.9652491000
+2 2 10.2664260100 9.0875724400 7.2549251000
+3 2 7.6048777700 8.2696040000 5.8630787700
+4 3 8.1653002100 10.7056535200 6.6268551800
+5 1 6.5298244000 8.4899998400 8.8353049100
+6 4 6.3322642100 8.5570433500 9.9156926900
+7 4 5.7957331700 9.0654793500 8.2005137800
+8 4 6.6252138700 7.4269019400 8.5139002300
+9 5 7.8437014500 9.1336258500 8.4937526800
+10 4 8.5608672700 8.4182516600 8.7179331200
+11 4 8.0447107000 9.9875540900 8.9965768200
+0.0 0.0 0.0
+15.0 0.0 0.0
+0.0 15.0 0.0
+0.0 0.0 15.0
+}
+Driver = VelocityVerlet {
+  MovedAtoms = 1:-1
+  Steps = 5000
+  TimeStep [fs] = 0.5
+  Thermostat = NoseHoover {
+    Temperature [Kelvin] = 300.00
+    CouplingStrength [cm^-1] = 3000.0
+    ChainLength = 3
+    Order = 3
+    IntegratorSteps = 1
+    AdaptFillingTemp = No
+  }
+  Velocities [AA/ps] = {
+-4.6988572400 -2.6206024200 3.8964250700
+1.0711472900 2.4139801300 -1.5876756700
+0.2138983000 0.2143449300 -0.2289999100
+0.9544464100 -6.8877654900 1.1210398300
+-2.8083739200 2.3838975400 -1.9501660000
+16.5797368700 11.9285857800 -6.1062549300
+-14.2797865400 5.6433666300 4.9280729000
+13.9369778800 21.5170138300 -29.4653279100
+1.4128093600 0.9757475000 4.2118453300
+-26.8635913800 -21.9836488600 12.2770415600
+20.1007851900 -10.9598185200 -17.2502633200
+  }
+  MDRestartFrequency = 10
+  OutputPrefix = "geo_end"
+  Plumed = Yes
+  KeepStationary = Yes
+  Masses = {}
+}
+Hamiltonian = xTB {
+  Method = "GFN2-xTB"
+  Charge = 0
+  SCCTolerance = 1e-6
+  MaxSCCIterations = 200
+  Filling = Fermi {
+    Temperature [Kelvin] = 300.00
+    IndependentKFilling = No
+  }
+  KPointsAndWeights = {
+0.0 0.0 0.0 1.0
+  }
+  ShellResolvedSCC = Yes
+  SCC = Yes
+  ReadInitialCharges = No
+  InitialCharges = {}
+  EwaldParameter = 0.0000000000000000
+  EwaldTolerance = 1.0000000000000001E-009
+  ConvergentSCCOnly = Yes
+  SpinPolarisation = {}
+  ElectricField = {}
+  Solver = RelativelyRobust {}
+  Dispersion = {}
+  Solvation = {}
+  Electrostatics = GammaFunctional {}
+  Differentiation = FiniteDiff {
+    Delta = 1.2207031250000000E-004
+  }
+  ForceEvaluation = "Traditional"
+  ElectronicConstraints = {}
+  Mixer = Broyden {
+    MixingParameter = 0.20000000000000001
+    InverseJacobiWeight = 1.0000000000000000E-002
+    MinimalWeight = 1.0000000000000000
+    MaximalWeight = 100000.00000000000
+    WeightFactor = 1.0000000000000000E-002
+  }
+}
+Options = {
+  RandomSeed = 42
+  WriteDetailedOut = Yes
+  WriteAutotestTag = No
+  WriteDetailedXML = No
+  WriteResultsTag = No
+  MDOutput = {}
+  WriteHS = No
+  WriteRealHS = No
+  MinimiseMemoryUsage = No
+  ShowFoldedCoords = No
+  TimingVerbosity = 1
+  WriteCharges = Yes
+  WriteChargesAsText = No
+  WriteAllAtomGeometry = No
+  BinaryAccessTypes = {
+ "stream"
+  }
+}
+Parallel = {
+  UseOmpThreads = Yes
+  Groups = 1
+  Blacs = BlockSize {
+32
+  }
+}
+ParserOptions = {
+  ParserVersion = 14
+  WriteHSDInput = Yes
+  StopAfterParsing = No
+  IgnoreUnprocessedNodes = No
+}
+Reks = None {}
+Analysis = {
+  ProjectStates = {}
+  WriteEigenvectors = No
+  WriteBandOut = Yes
+  MullikenAnalysis = Yes
+  WriteNetCharges = No
+  AtomResolvedEnergies = No
+  PrintForces = No
+}
+ExcitedState = {}

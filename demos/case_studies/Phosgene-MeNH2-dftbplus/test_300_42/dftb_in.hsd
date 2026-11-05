@@ -1,0 +1,41 @@
+# Biased segment: continues from the previous segment's last frame (geometry and velocities)
+Geometry = GenFormat {
+  <<< "geo_start.gen"
+}
+
+Driver = VelocityVerlet {
+  MovedAtoms = 1:-1
+  Steps = 5000
+  TimeStep [fs] = 0.5
+  Thermostat = NoseHoover {
+    Temperature [Kelvin] = 300.00
+    CouplingStrength [cm^-1] = 3000.0
+  }
+  Velocities [AA/ps] = {
+    <<< "velocities.dat"
+  }
+  MDRestartFrequency = 10
+  OutputPrefix = "geo_end"
+  Plumed = Yes
+}
+
+Hamiltonian = xTB {
+  Method = "GFN2-xTB"
+  Charge = 0
+  SCCTolerance = 1e-6
+  MaxSCCIterations = 200
+  Filling = Fermi {
+    Temperature [Kelvin] = 300.00
+  }
+  KPointsAndWeights = {
+    0.0 0.0 0.0 1.0
+  }
+}
+
+Options {
+  RandomSeed = 42
+}
+
+Parallel {
+  UseOmpThreads = Yes
+}
