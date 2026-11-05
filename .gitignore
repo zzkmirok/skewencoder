@@ -113,3 +113,4 @@ old_code/
 test_notebooks/
 lightning_logs/
 results/
+dftb.out
