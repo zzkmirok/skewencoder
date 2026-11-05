@@ -35,3 +35,14 @@ def test_transform_colvar_key():
     colvar_key = "o3h10"
     bond_type = transform_colvar_key(colvar_key=colvar_key)
     assert bond_type == "h-o"
+
+
+def test_chlorine_bond_types():
+    from skewencoder.state_detection import Bond_type_lib, transform_colvar_key
+
+    lib = Bond_type_lib()
+    lib.build_default()
+    # phosgene + methylamine heavy-atom descriptors all resolve to a known bond type
+    for key in ["C1Cl2", "Cl2Cl3", "Cl2O4", "Cl3N9", "H10Cl2", "C1C5", "C1O4", "C5N9", "O4N9"]:
+        assert transform_colvar_key(key) in lib.bond_type_dict, key
+    assert transform_colvar_key("Cl2C1") == "C-Cl"

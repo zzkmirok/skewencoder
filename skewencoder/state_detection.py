@@ -36,6 +36,7 @@ atomic_numbers = {
     "O": 8,  # Oxygen
     "F": 9,  # Fluorine
     "Ne": 10,  # Neon
+    "Cl": 17,  # Chlorine
     "Cu": 29,
     "Ru": 44,
     # Add more elements as needed...
@@ -70,6 +71,11 @@ class Bond_type_lib:
         self.bond_type_dict["H-Ru"] = {"m,n": (12, 6), "bond length": 1.9}
         self.bond_type_dict["H-N"] = {"m,n": (12, 6), "bond length": 1.02}
         self.bond_type_dict["N-N"] = {"m,n": (12, 6), "bond length": 1.45}
+        self.bond_type_dict["H-Cl"] = {"m,n": (12, 6), "bond length": 1.27}
+        self.bond_type_dict["C-Cl"] = {"m,n": (12, 6), "bond length": 1.76}
+        self.bond_type_dict["N-Cl"] = {"m,n": (12, 6), "bond length": 1.75}
+        self.bond_type_dict["O-Cl"] = {"m,n": (12, 6), "bond length": 1.70}
+        self.bond_type_dict["Cl-Cl"] = {"m,n": (12, 6), "bond length": 1.99}
 
     # TODO: convert to capital letters and change labels in BAS
     def _update_m_n(self):
