@@ -1,4 +1,5 @@
 from .io import GeometryParser
+from .elements import VDW_RADII, normalize_symbol
 import itertools
 from collections.abc import Mapping
 from .plumedkits import PLUMED_OBJ, DISTANCE, WALL, PYTORCH_MODEL
@@ -17,24 +18,12 @@ class PlumedInput:
         self.if_biased = if_biased
         self.Options = Options
         self.contr_all = False
-        self.vdw_constr = True
+        self.vdw_constr = False  # opt in with vdw_constr=True; needs pycv installed
 
         if geo_parser is None:
             raise ValueError("Empty input for geo_parser")
         self.adjacent_list : Mapping[int, list[int]] = {key + 1: [value + 1 for value in values] for key, values in geo_parser.adjacent_list.items()}
         self.atom_list : Mapping[str, list[int]] = {key: [value + 1 for value in values] for key, values in geo_parser.atom_list.items()}
-
-        self.vdw_pairs : list[tuple[float, tuple[int, int]]] = None
-        
-        # if geo_parser.vdw_pairs:
-        #     self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
-        # TODO: temporal solution for heavy_only is on
-        if not heavy_atom_only:
-            if geo_parser.vdw_pairs:
-                self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs]
-        else:
-            if geo_parser.vdw_pairs_heavy_only:
-                self.vdw_pairs : list[tuple[float, tuple[int, int]]] = [(vdw_pair[0], (vdw_pair[1][0]+1, vdw_pair[1][1]+1)) for vdw_pair in geo_parser.vdw_pairs_heavy_only]
 
         self.heavy_atom_pairs : list[tuple[str, tuple[int, int]]] = []
         self.h_heavy_pairs : list[tuple[str, tuple[int, int]]] = None
@@ -87,7 +76,6 @@ class PlumedInput:
         self.vdw_contact_label = "vdw_contact"
         self.vdw_wall_label = "vdw_wall"
         self.vdw_wall_kappa = 250
-        self.vdw_constr_in_input = False
         # TODO: Is it normal to add assertion here?
         if self.Options is not None:
             for key in self.Options.keys():
@@ -171,9 +159,10 @@ class PlumedInput:
             if additional_snippet is not None:
                 plumed_input_file.append(self.gen_additional_commands_snippet())
         
-        # vdw_pairs is set only when the initial geometry has more than one fragment
-        self.vdw_constr_in_input = bool(self.vdw_constr and self.vdw_pairs)
-        if self.vdw_constr_in_input:
+        # Added regardless of the initial fragment count: the CV re-detects fragments every step
+        # (gap = 0, no force, while everything is one molecule), so a molecule that dissociates
+        # during the run is still covered.
+        if self.vdw_constr:
             plumed_input_file.append(self.gen_plumed_vdw_constr_snippet())
 
         if self.contr_all:
@@ -323,7 +312,7 @@ class PlumedInput:
                 if isinstance(obj, DISTANCE):
                     print_args.append(obj.label)
         
-        if self.vdw_constr_in_input:
+        if self.vdw_constr:
             print_args += [f"{self.vdw_contact_label}.py-gap", f"{self.vdw_contact_label}.py-nfrag", f"{self.vdw_wall_label}.bias"]
 
         if self.if_biased:
@@ -346,6 +335,13 @@ class PlumedInput:
         """
         if self.unit != "A":
             raise ValueError(f"the van der Waals contact wall assumes UNITS LENGTH=A, got {self.unit}")
+        # fail here rather than at PLUMED runtime inside skewencoder.contactwall
+        unsupported = sorted({normalize_symbol(s) for s in self.atom_list} - VDW_RADII.keys())
+        if unsupported:
+            raise ValueError(
+                f"no van der Waals radius for {', '.join(unsupported)}; add it to skewencoder.elements.VDW_RADII "
+                f"or pass vdw_constr=False"
+            )
         pycv_library = self.pycv_library
         if pycv_library is None:
             from pycv import getPythonCVInterface

@@ -6,6 +6,8 @@ from skewencoder.plumedkits import DISTANCE, WALL
 
 import pathlib
 
+import pytest
+
 data_path = (pathlib.Path(__file__).parent.resolve())
 vdw_kappa = 250 # should match the settings in PlumedInput
 pycv_library = "/path/to/PythonCVInterface.so"
@@ -36,19 +38,19 @@ def test_PlumedInput_gen_vdw_contr():
     coordparser = GeometryParser(coord_file=coord_file)
     coordparser_1 = GeometryParser(coord_file=coord_file2)
 
-    plumed_input1 = PlumedInput(geo_parser=coordparser_1, if_biased=True, heavy_atom_only= True, pytorch_model_heavy= "./dumbmodel1",  skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1}, pycv_library=pycv_library)
+    plumed_input1 = PlumedInput(geo_parser=coordparser_1, if_biased=True, heavy_atom_only= True, pytorch_model_heavy= "./dumbmodel1",  skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1}, pycv_library=pycv_library, vdw_constr=True)
 
     assert plumed_input1.gen_plumed_vdw_constr_snippet() == f"""LOAD FILE={pycv_library}
 vdw_contact: PYCVINTERFACE ATOMS=1-15 IMPORT=skewencoder.contactwall INIT=plumedInit CALCULATE=plumedCalculate
 vdw_wall: UPPER_WALLS ARG=vdw_contact.py-gap AT=0.0 KAPPA={vdw_kappa} EXP=2.0 EPS=1.0 OFFSET=0.0"""
 
-    plumed_input2 = PlumedInput(geo_parser=coordparser, if_biased=True, heavy_atom_only= False ,distance_options= ["NOPBC"], pytorch_model_heavy= "./dumbmodel1", pytorch_model_h= "./dumbmodel2", skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1}, skew_wall_h_adj = {"is_lower_wall": False, "kappa": 200.0, "pos": 0.1, "offset": 0.2}, pycv_library=pycv_library)
+    plumed_input2 = PlumedInput(geo_parser=coordparser, if_biased=True, heavy_atom_only= False ,distance_options= ["NOPBC"], pytorch_model_heavy= "./dumbmodel1", pytorch_model_h= "./dumbmodel2", skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1}, skew_wall_h_adj = {"is_lower_wall": False, "kappa": 200.0, "pos": 0.1, "offset": 0.2}, pycv_library=pycv_library, vdw_constr=True)
     assert plumed_input2.gen_plumed_vdw_constr_snippet() == vdw_snippet_nopbc
 
-    plumed_input2 = PlumedInput(geo_parser=coordparser, if_biased=True, heavy_atom_only= True ,distance_options= ["NOPBC"], pytorch_model_heavy= "./dumbmodel1", pytorch_model_h= "./dumbmodel2", skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1}, skew_wall_h_adj = {"is_lower_wall": False, "kappa": 200.0, "pos": 0.1, "offset": 0.2}, pycv_library=pycv_library)
+    plumed_input2 = PlumedInput(geo_parser=coordparser, if_biased=True, heavy_atom_only= True ,distance_options= ["NOPBC"], pytorch_model_heavy= "./dumbmodel1", pytorch_model_h= "./dumbmodel2", skew_wall_heavy = {"is_lower_wall": True, "kappa": 100.0, "pos": 0.0, "offset": 0.1}, skew_wall_h_adj = {"is_lower_wall": False, "kappa": 200.0, "pos": 0.1, "offset": 0.2}, pycv_library=pycv_library, vdw_constr=True)
     assert plumed_input2.gen_plumed_vdw_constr_snippet() == vdw_snippet_nopbc
 
-    plumed_input_no_vdw = PlumedInput(geo_parser=coordparser, if_biased=False, distance_options= ["NOPBC"], vdw_constr=False)
+    plumed_input_no_vdw = PlumedInput(geo_parser=coordparser, if_biased=False, distance_options= ["NOPBC"])  # off by default
     assert "PYCVINTERFACE" not in plumed_input_no_vdw.build()
 
     assert plumed_input2.build() == f"""# vim:ft=plumed
@@ -158,3 +160,20 @@ cv_wall_h_adj: UPPER_WALLS ARG=cv_h_adj.node-0 AT=-0.1 KAPPA=200.0 EXP=2.0 EPS=1
 
 PRINT FMT=%g STRIDE=10 FILE=./COLVAR ARG=C1C6,C1N5,C6N5,H2C1,H3C1,H4C1,c1,cv_heavy.*,cv_h_adj.*'''
 
+
+def test_PlumedInput_vdw_contr_single_fragment():
+    # MeNC starts as one molecule; the wall must still be added because the CV re-detects
+    # fragments every step and the molecule may dissociate during the run.
+    mencparser = GeometryParser(coord_file=data_path / "MeNC.dat")
+    assert len(mencparser.connected_components) == 1
+    built = PlumedInput(geo_parser=mencparser, pycv_library=pycv_library, vdw_constr=True).build()
+    assert "vdw_contact: PYCVINTERFACE ATOMS=1-6" in built
+    assert "vdw_wall: UPPER_WALLS ARG=vdw_contact.py-gap" in built
+
+def test_PlumedInput_vdw_contr_unsupported_element(tmp_path):
+    coord_file = tmp_path / "ru_ch.xyz"
+    coord_file.write_text("3\n\nRu 0.0 0.0 0.0\nC 0.0 0.0 1.9\nH 0.0 0.0 -1.6\n")
+    plumed_input = PlumedInput(geo_parser=GeometryParser(coord_file=coord_file), pycv_library=pycv_library, vdw_constr=True)
+    with pytest.raises(ValueError, match="no van der Waals radius for Ru"):
+        plumed_input.build()
+    assert "PYCVINTERFACE" not in PlumedInput(geo_parser=GeometryParser(coord_file=coord_file)).build()
