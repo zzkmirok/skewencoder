@@ -20,7 +20,8 @@ atoms involved are within the bond cutoff (about 2 A), far inside van der Waals 
 so gap < 0 and a wall at AT >= 0 exerts no force on either side of the switch.
 
 Lengths are in Angstrom, so the PLUMED input needs UNITS LENGTH=A. Elements are assigned from atomic
-masses, so the MD engine (or ``plumed driver --mc``) must provide standard masses.
+masses, so the MD engine (or ``plumed driver --mc``) must provide standard masses, in amu or in
+electron masses (DFTB+).
 """
 import numpy as np
 from scipy.sparse.csgraph import connected_components, minimum_spanning_tree
@@ -36,10 +37,21 @@ SOFTMIN_LAMBDA = 50.0  # 1/A; the smooth minimum underestimates the true one by 
 ELEMENTS = {s: (ATOMIC_WEIGHTS[s], COVALENT_RADII[s], r) for s, r in VDW_RADII.items()}
 MASS_TOLERANCE = 0.5  # amu
 H_ISOTOPE_MAX_MASS = 3.1  # amu; D and T are treated as H
+AMU_IN_ELECTRON_MASSES = 1822.888486
+# Every element is lighter than this in amu and heavier than this in electron masses (H: 1837),
+# so the mass unit can be told from the values.
+ATOMIC_UNIT_MASS_THRESHOLD = 1000.0
 
 
 def element_symbols(masses):
-    """Assign element symbols from atomic masses (amu)."""
+    """Assign element symbols from atomic masses, in amu or in electron masses.
+
+    DFTB+ hands PLUMED its masses in atomic units (electron masses) while declaring them as amu,
+    so masses all above ATOMIC_UNIT_MASS_THRESHOLD are converted to amu first.
+    """
+    masses = np.asarray(masses, dtype=float)
+    if masses.min() > ATOMIC_UNIT_MASS_THRESHOLD:
+        masses = masses / AMU_IN_ELECTRON_MASSES
     names = list(ELEMENTS)
     ref = np.array([ELEMENTS[e][0] for e in names])
     idx = np.abs(masses[:, None] - ref[None, :]).argmin(axis=1)

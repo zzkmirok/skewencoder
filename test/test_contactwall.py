@@ -138,3 +138,10 @@ def test_element_assignment():
     assert contactwall.element_symbols(masses) == ["C", "Cl", "H", "O"]
     with pytest.raises(ValueError, match="mass 101.07"):
         contactwall.element_symbols(np.array([12.011, 101.07]))  # Ru has no vdW radius here
+
+
+def test_element_symbols_atomic_units():
+    # DFTB+ passes masses in electron masses; values from a real DFTB+/PLUMED run
+    amu = np.array([12.0107, 35.453, 1.00794, 15.9994])
+    assert contactwall.element_symbols(amu * contactwall.AMU_IN_ELECTRON_MASSES) == ["C", "Cl", "H", "O"]
+    assert contactwall.element_symbols(np.array([21894.23216763776]))[0] == "C"
